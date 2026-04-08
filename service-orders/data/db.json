@@ -1,0 +1,21 @@
+{
+  "orders": [
+    {
+      "id": 1,
+      "userId": 1,
+      "items": [
+        {
+          "skillId": 1,
+          "quantity": 1
+        },
+        {
+          "skillId": 2,
+          "quantity": 1
+        }
+      ],
+      "status": "pending",
+      "createdAt": "2026-04-08T03:18:04.603Z",
+      "completedAt": null
+    }
+  ]
+}
