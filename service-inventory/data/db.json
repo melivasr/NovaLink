@@ -1,0 +1,109 @@
+{
+  "inventory": [
+    {
+      "id": 1,
+      "name": "Empatía",
+      "description": "Capacidad de entender los sentimientos de los demás",
+      "stock": 100,
+      "points": 10
+    },
+    {
+      "id": 2,
+      "name": "Amistad",
+      "description": "Habilidad para formar y mantener amistades",
+      "stock": 100,
+      "points": 10
+    },
+    {
+      "id": 3,
+      "name": "Liderazgo",
+      "description": "Capacidad de guiar y motivar a otros",
+      "stock": 100,
+      "points": 15
+    },
+    {
+      "id": 4,
+      "name": "Creatividad",
+      "description": "Pensamiento innovador y original",
+      "stock": 100,
+      "points": 12
+    },
+    {
+      "id": 5,
+      "name": "Resiliencia",
+      "description": "Capacidad de recuperarse de dificultades",
+      "stock": 100,
+      "points": 14
+    },
+    {
+      "id": 6,
+      "name": "Comunicación",
+      "description": "Habilidad para expresarse claramente",
+      "stock": 100,
+      "points": 11
+    },
+    {
+      "id": 7,
+      "name": "Colaboración",
+      "description": "Trabajo en equipo efectivo",
+      "stock": 100,
+      "points": 13
+    },
+    {
+      "id": 8,
+      "name": "Sagacidad",
+      "description": "Inteligencia práctica y astucia",
+      "stock": 100,
+      "points": 16
+    },
+    {
+      "id": 9,
+      "name": "Paciencia",
+      "description": "Capacidad de esperar sin frustrarse",
+      "stock": 100,
+      "points": 9
+    },
+    {
+      "id": 10,
+      "name": "Respeto",
+      "description": "Tratamiento cortés hacia los demás",
+      "stock": 100,
+      "points": 8
+    },
+    {
+      "id": 11,
+      "name": "Confianza",
+      "description": "Capacidad de confiar en uno mismo y en otros",
+      "stock": 100,
+      "points": 12
+    },
+    {
+      "id": 12,
+      "name": "Humor",
+      "description": "Sentido del humor y capacidad de hacer reír",
+      "stock": 100,
+      "points": 10
+    },
+    {
+      "id": 13,
+      "name": "Adaptabilidad",
+      "description": "Flexibilidad ante cambios",
+      "stock": 100,
+      "points": 13
+    },
+    {
+      "id": 14,
+      "name": "Escucha Activa",
+      "description": "Atención plena a lo que dicen los demás",
+      "stock": 100,
+      "points": 11
+    },
+    {
+      "id": 15,
+      "name": "Iniciativa",
+      "description": "Capacidad de tomar acción por cuenta propia",
+      "stock": 100,
+      "points": 14
+    }
+  ]
+}
