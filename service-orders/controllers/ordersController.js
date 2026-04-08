@@ -1,10 +1,3 @@
-const db = require('../data/db');
-const axios = require('axios');
-
-const USERS_SERVICE_URL = 'http://localhost:3001/api/v1/users';
-const INVENTORY_SERVICE_URL = 'http://localhost:3002/api/v1/inventory';
-const NOTIFICATIONS_SERVICE_URL = 'http://localhost:3004/api/v1/noti';
-
 const getServiceError = (error, fallbackMessage) => {
   if (error.response) {
     return {
@@ -19,9 +12,15 @@ const getServiceError = (error, fallbackMessage) => {
   };
 };
 
-const getOrderById = (req, res) => {
-  const id = req.params.id;
-  const order = db.getOrder(id);
+const createOrdersController = (deps) => {
+  const db = deps.db;
+  const usersClient = deps.usersClient;
+  const inventoryClient = deps.inventoryClient;
+  const notificationsClient = deps.notificationsClient;
+
+  const getOrderById = (req, res) => {
+    const id = req.params.id;
+    const order = db.getOrder(id);
 
   if (!order) {
     return res.status(404).json({
@@ -30,14 +29,14 @@ const getOrderById = (req, res) => {
     });
   }
 
-  res.status(200).json({
-    success: true,
-    data: order
-  });
-};
+    res.status(200).json({
+      success: true,
+      data: order
+    });
+  };
 
-const createOrder = (req, res) => {
-  const { userId, items } = req.body;
+  const createOrder = (req, res) => {
+    const { userId, items } = req.body;
 
   if (!userId || !items || !Array.isArray(items) || items.length === 0) {
     return res.status(400).json({
@@ -55,18 +54,18 @@ const createOrder = (req, res) => {
     }
   }
 
-  const newOrder = db.addOrder({ userId, items, status: 'pending' });
+    const newOrder = db.addOrder({ userId, items, status: 'pending' });
 
-  res.status(201).json({
-    success: true,
-    data: newOrder,
-    message: 'Pedido creado exitosamente'
-  });
-};
+    res.status(201).json({
+      success: true,
+      data: newOrder,
+      message: 'Pedido creado exitosamente'
+    });
+  };
 
-const checkoutOrder = async (req, res) => {
-  const id = req.params.id;
-  const order = db.getOrder(id);
+  const checkoutOrder = async (req, res) => {
+    const id = req.params.id;
+    const order = db.getOrder(id);
 
   if (!order) {
     return res.status(404).json({
@@ -82,14 +81,14 @@ const checkoutOrder = async (req, res) => {
     });
   }
 
-  try {
-    await axios.get(`${USERS_SERVICE_URL}/${order.userId}`);
+    try {
+      await usersClient.getUserById(order.userId);
 
     const checkedSkills = [];
 
     // Verificar stock para cada item
     for (const item of order.items) {
-      const skillResponse = await axios.get(`${INVENTORY_SERVICE_URL}/${item.skillId}`);
+      const skillResponse = await inventoryClient.getSkillById(item.skillId);
 
       const skill = skillResponse.data.data;
       if (skill.stock < item.quantity) {
@@ -108,13 +107,13 @@ const checkoutOrder = async (req, res) => {
     }
 
     for (const item of checkedSkills) {
-      await axios.put(`${INVENTORY_SERVICE_URL}/${item.skillId}`, {
+      await inventoryClient.updateSkill(item.skillId, {
         stock: item.newStock
       });
     }
 
     for (const item of checkedSkills) {
-      await axios.put(`${USERS_SERVICE_URL}/${order.userId}/skill`, {
+      await usersClient.addSkillToUser(order.userId, {
         skillId: item.skillId,
         name: item.skillName
       });
@@ -127,7 +126,7 @@ const checkoutOrder = async (req, res) => {
     });
 
     // Enviar notificación
-    await axios.post(NOTIFICATIONS_SERVICE_URL, {
+    await notificationsClient.createNotification({
       userId: order.userId,
       message: `Tu pedido ${id} ha sido completado exitosamente`
     });
@@ -138,19 +137,19 @@ const checkoutOrder = async (req, res) => {
       message: 'Pedido completado exitosamente'
     });
 
-  } catch (error) {
-    const serviceError = getServiceError(error, 'Error interno del servidor');
-    console.error('Error procesando pedido:', serviceError.message);
-    return res.status(serviceError.status).json({
-      success: false,
-      message: serviceError.message
-    });
-  }
-};
+    } catch (error) {
+      const serviceError = getServiceError(error, 'Error interno del servidor');
+      console.error('Error procesando pedido:', serviceError.message);
+      return res.status(serviceError.status).json({
+        success: false,
+        message: serviceError.message
+      });
+    }
+  };
 
-const cancelOrder = (req, res) => {
-  const id = req.params.id;
-  const deleted = db.deleteOrder(id);
+  const cancelOrder = (req, res) => {
+    const id = req.params.id;
+    const deleted = db.deleteOrder(id);
 
   if (!deleted) {
     return res.status(404).json({
@@ -159,19 +158,27 @@ const cancelOrder = (req, res) => {
     });
   }
 
-  res.status(204).send();
+    res.status(204).send();
+  };
+
+  const getUserOrders = (req, res) => {
+    const userId = req.params.userId;
+    const orders = db.getUserOrders(userId);
+
+    res.status(200).json({
+      success: true,
+      data: orders,
+      message: `Pedidos del usuario ${userId}`
+    });
+  };
+
+  return {
+    getOrderById,
+    createOrder,
+    checkoutOrder,
+    cancelOrder,
+    getUserOrders
+  };
 };
 
-const getUserOrders = (req, res) => {
-  const userId = req.params.userId;
-  const orders = db.getUserOrders(userId);
-
-  res.status(200).json({
-    success: true,
-    data: orders,
-    message: `Pedidos del usuario ${userId}`
-  });
-};
-
-module.exports = {getOrderById, createOrder, checkoutOrder,
-  cancelOrder, getUserOrders};
+module.exports = createOrdersController;
