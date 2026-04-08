@@ -1,0 +1,12 @@
+{
+  "name": "service-notifications",
+  "version": "1.0.0",
+  "description": "API de Notificaciones - Envío de confirmaciones y mensajes al usuario",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
