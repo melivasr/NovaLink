@@ -1,90 +1,134 @@
-const db = require('../data/db');
+const { Pool } = require('pg');
 
-const getAllSkills = (req, res) => {
-  const skills = db.getInventory();
+const pool = new Pool({
+  user: process.env.DB_USER || 'postgres',
+  host: process.env.DB_HOST || 'localhost',
+  database: process.env.DB_NAME || 'products-db',
+  password: process.env.DB_PASSWORD || 'postgres',
+  port: process.env.DB_PORT || 5432
+});
 
-  res.status(200).json({
-    success: true,
-    data: skills
-  });
+// GET all
+const getAllSkills = async (req, res) => {
+  try {
+    const results = await pool.query(
+      'SELECT id, name, difficulty, xp_points AS points, stock, created_at FROM products ORDER BY created_at ASC'
+    );
+
+    res.status(200).json(results.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error obteniendo habilidades');
+  }
 };
 
-const getSkillById = (req, res) => {
+// GET by id
+const getSkillById = async (req, res) => {
   const id = req.params.id;
-  const skill = db.getSkill(id);
 
-  if (!skill) {
-    return res.status(404).json({
-      success: false,
-      message: 'Habilidad no encontrada'
-    });
+  try {
+    const results = await pool.query(
+      'SELECT id, name, difficulty, xp_points AS points, stock, created_at FROM products WHERE id = $1',
+      [id]
+    );
+
+    if (results.rows.length === 0) {
+      return res.status(404).send('Habilidad no encontrada');
+    }
+
+    res.status(200).json(results.rows[0]);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error obteniendo la habilidad');
   }
-
-  res.status(200).json({
-    success: true,
-    data: skill
-  });
 };
 
-const createSkill = (req, res) => {
-  const { name, description, stock, points } = req.body;
+// POST
+const createSkill = async (req, res) => {
+  const { name, difficulty, stock, points } = req.body;
 
-  if (!name || !description || stock === undefined || points === undefined) {
-    return res.status(400).json({
-      success: false,
-      message: 'Nombre, descripción, stock y puntos son requeridos'
-    });
+  if (!name || !difficulty || stock === undefined || points === undefined) {
+    return res.status(400).send('Faltan datos');
   }
 
-  if (stock < 0 || points < 0) {
-    return res.status(400).json({
-      success: false,
-      message: 'Stock y puntos deben ser positivos'
-    });
+  try {
+    const results = await pool.query(
+      'INSERT INTO products (name, difficulty, xp_points, stock) VALUES ($1, $2, $3, $4) RETURNING *',
+      [name, difficulty, points, stock]
+    );
+
+    res.status(201).json(results.rows[0]);
+  } catch (error) {
+    console.error(error);
+
+    if (error.code === '23505') {
+      return res.status(400).send('Nombre duplicado');
+    }
+
+    res.status(500).send('Error creando habilidad');
   }
-
-  const newSkill = db.addSkill({ name, description, stock, points });
-
-  res.status(201).json({
-    success: true,
-    data: newSkill,
-    message: 'Habilidad creada exitosamente'
-  });
 };
 
-const updateSkill = (req, res) => {
+// PUT
+const updateSkill = async (req, res) => {
   const id = req.params.id;
-  const { name, description, stock, points } = req.body;
+  const { name, difficulty, stock, points } = req.body;
 
-  const skill = db.updateSkill(id, { name, description, stock, points });
+  try {
+    const existing = await pool.query(
+      'SELECT * FROM products WHERE id = $1',
+      [id]
+    );
 
-  if (!skill) {
-    return res.status(404).json({
-      success: false,
-      message: 'Habilidad no encontrada'
-    });
+    if (existing.rows.length === 0) {
+      return res.status(404).send('Habilidad no encontrada');
+    }
+
+    const current = existing.rows[0];
+
+    const updatedName = name || current.name;
+    const updatedDifficulty = difficulty || current.difficulty;
+    const updatedStock = stock !== undefined ? stock : current.stock;
+    const updatedPoints = points !== undefined ? points : current.xp_points;
+
+    const results = await pool.query(
+      `UPDATE products
+       SET name = $1,
+           difficulty = $2,
+           xp_points = $3,
+           stock = $4
+       WHERE id = $5
+       RETURNING *`,
+      [updatedName, updatedDifficulty, updatedPoints, updatedStock, id]
+    );
+
+    res.status(200).json(results.rows[0]);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error actualizando habilidad');
   }
-
-  res.status(200).json({
-    success: true,
-    data: skill,
-    message: 'Habilidad actualizada exitosamente'
-  });
 };
 
-const deleteSkill = (req, res) => {
+// DELETE
+const deleteSkill = async (req, res) => {
   const id = req.params.id;
-  const deleted = db.deleteSkill(id);
 
-  if (!deleted) {
-    return res.status(404).json({
-      success: false,
-      message: 'Habilidad no encontrada'
-    });
+  try {
+    const result = await pool.query(
+      'DELETE FROM products WHERE id = $1',
+      [id]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).send('Habilidad no encontrada');
+    }
+
+    res.status(200).send('Habilidad eliminada');
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error eliminando habilidad');
   }
-
-  res.status(204).send();
 };
 
-module.exports = {getAllSkills, getSkillById,
+module.exports = {getAllSkills, getSkillById, 
   createSkill, updateSkill, deleteSkill};

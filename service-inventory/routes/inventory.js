@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
+
 const {getAllSkills, getSkillById, createSkill, updateSkill,
-    deleteSkill} = require('../controllers/inventoryController');
+     deleteSkill} = require('../controllers/inventoryController');
 
 router.post('/', createSkill);
 router.get('/', getAllSkills);
