@@ -1,3 +1,13 @@
+const { Pool } = require('pg');
+
+const pool = new Pool({
+  user: process.env.DB_USER || 'postgres',
+  host: process.env.DB_HOST || 'localhost',
+  database: process.env.DB_NAME || 'orders-db',
+  password: process.env.DB_PASSWORD || 'postgres',
+  port: process.env.DB_PORT || 5432
+});
+
 const getServiceError = (error, fallbackMessage) => {
   if (error.response) {
     return {
@@ -13,133 +23,222 @@ const getServiceError = (error, fallbackMessage) => {
 };
 
 const createOrdersController = (deps) => {
-  const db = deps.db;
   const usersClient = deps.usersClient;
   const inventoryClient = deps.inventoryClient;
   const notificationsClient = deps.notificationsClient;
 
-  const getOrderById = (req, res) => {
+  const getOrderById = async (req, res) => {
     const id = req.params.id;
-    const order = db.getOrder(id);
 
-  if (!order) {
-    return res.status(404).json({
-      success: false,
-      message: 'Pedido no encontrado'
-    });
-  }
+    try {
+      const orderResult = await pool.query(
+        `SELECT id, user_id, status, created_at
+         FROM orders
+         WHERE id = $1`,
+        [id]
+      );
 
-    res.status(200).json({
-      success: true,
-      data: order
-    });
-  };
+      if (orderResult.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'Pedido no encontrado'
+        });
+      }
 
-  const createOrder = (req, res) => {
-    const { userId, items } = req.body;
+      const itemsResult = await pool.query(
+        `SELECT product_id AS "skillId", quantity
+         FROM cart_items
+         WHERE order_id = $1`,
+        [id]
+      );
 
-  if (!userId || !items || !Array.isArray(items) || items.length === 0) {
-    return res.status(400).json({
-      success: false,
-      message: 'userId y items son requeridos'
-    });
-  }
+      const order = orderResult.rows[0];
 
-  for (const item of items) {
-    if (!item.skillId || !item.quantity || item.quantity < 1) {
-      return res.status(400).json({
+      res.status(200).json({
+        success: true,
+        data: {
+          id: order.id,
+          userId: order.user_id,
+          status: order.status,
+          createdAt: order.created_at,
+          items: itemsResult.rows
+        }
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({
         success: false,
-        message: 'Cada item debe tener skillId y quantity mayor a 0'
+        message: 'Error obteniendo pedido'
       });
     }
-  }
+  };
 
-    const newOrder = db.addOrder({ userId, items, status: 'pending' });
+  const createOrder = async (req, res) => {
+    const { userId, items } = req.body;
 
-    res.status(201).json({
-      success: true,
-      data: newOrder,
-      message: 'Pedido creado exitosamente'
-    });
+    if (!userId || !items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'userId y items son requeridos'
+      });
+    }
+
+    for (const item of items) {
+      if (!item.skillId || !item.quantity || item.quantity < 1) {
+        return res.status(400).json({
+          success: false,
+          message: 'Cada item debe tener skillId y quantity mayor a 0'
+        });
+      }
+    }
+
+    const client = await pool.connect();
+
+    try {
+      await client.query('BEGIN');
+
+      const orderResult = await client.query(
+        `INSERT INTO orders (user_id, status)
+         VALUES ($1, $2)
+         RETURNING id, user_id, status, created_at`,
+        [userId, 'Pendiente']
+      );
+
+      const order = orderResult.rows[0];
+
+      for (const item of items) {
+        await client.query(
+          `INSERT INTO cart_items (order_id, product_id, quantity)
+           VALUES ($1, $2, $3)`,
+          [order.id, item.skillId, item.quantity]
+        );
+      }
+
+      await client.query('COMMIT');
+
+      res.status(201).json({
+        success: true,
+        data: {
+          id: order.id,
+          userId: order.user_id,
+          status: order.status,
+          createdAt: order.created_at,
+          items: items
+        },
+        message: 'Pedido creado exitosamente'
+      });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error(error);
+      res.status(500).json({
+        success: false,
+        message: 'Error creando pedido'
+      });
+    } finally {
+      client.release();
+    }
   };
 
   const checkoutOrder = async (req, res) => {
     const id = req.params.id;
-    const order = db.getOrder(id);
-
-  if (!order) {
-    return res.status(404).json({
-      success: false,
-      message: 'Pedido no encontrado'
-    });
-  }
-
-  if (order.status !== 'pending') {
-    return res.status(400).json({
-      success: false,
-      message: 'El pedido ya fue procesado'
-    });
-  }
 
     try {
-      await usersClient.getUserById(order.userId);
+      const orderResult = await pool.query(
+        `SELECT id, user_id, status, created_at
+         FROM orders
+         WHERE id = $1`,
+        [id]
+      );
 
-    const checkedSkills = [];
-
-    // Verificar stock para cada item
-    for (const item of order.items) {
-      const skillResponse = await inventoryClient.getSkillById(item.skillId);
-
-      const skill = skillResponse.data.data;
-      if (skill.stock < item.quantity) {
-        return res.status(409).json({
+      if (orderResult.rows.length === 0) {
+        return res.status(404).json({
           success: false,
-          message: `Stock insuficiente para ${skill.name}`
+          message: 'Pedido no encontrado'
         });
       }
 
-      checkedSkills.push({
-        skillId: item.skillId,
-        quantity: item.quantity,
-        skillName: skill.name,
-        newStock: skill.stock - item.quantity
+      const order = orderResult.rows[0];
+
+      if (order.status !== 'Pendiente') {
+        return res.status(400).json({
+          success: false,
+          message: 'El pedido ya fue procesado'
+        });
+      }
+
+      const itemsResult = await pool.query(
+        `SELECT product_id AS "skillId", quantity
+         FROM cart_items
+         WHERE order_id = $1`,
+        [id]
+      );
+
+      await usersClient.getUserById(order.user_id);
+
+      const checkedSkills = [];
+
+      for (const item of itemsResult.rows) {
+        const skillResponse = await inventoryClient.getSkillById(item.skillId);
+        const skill = skillResponse.data.data;
+
+        if (skill.stock < item.quantity) {
+          return res.status(409).json({
+            success: false,
+            message: `Stock insuficiente para ${skill.name}`
+          });
+        }
+
+        checkedSkills.push({
+          skillId: item.skillId,
+          quantity: item.quantity,
+          skillName: skill.name,
+          newStock: skill.stock - item.quantity
+        });
+      }
+
+      for (const item of checkedSkills) {
+        await inventoryClient.updateSkill(item.skillId, {
+          stock: item.newStock
+        });
+      }
+
+      for (const item of checkedSkills) {
+        await usersClient.addSkillToUser(order.user_id, {
+          skillId: item.skillId
+        });
+      }
+
+      const updatedOrderResult = await pool.query(
+        `UPDATE orders
+         SET status = $1
+         WHERE id = $2
+         RETURNING id, user_id, status, created_at`,
+        ['Completada', id]
+      );
+
+      await notificationsClient.createNotification({
+        userId: order.user_id,
+        orderId: id,
+        message: `Tu pedido ${id} ha sido completado exitosamente`
       });
-    }
 
-    for (const item of checkedSkills) {
-      await inventoryClient.updateSkill(item.skillId, {
-        stock: item.newStock
+      const updatedOrder = updatedOrderResult.rows[0];
+
+      res.status(200).json({
+        success: true,
+        data: {
+          id: updatedOrder.id,
+          userId: updatedOrder.user_id,
+          status: updatedOrder.status,
+          createdAt: updatedOrder.created_at,
+          items: itemsResult.rows
+        },
+        message: 'Pedido completado exitosamente'
       });
-    }
-
-    for (const item of checkedSkills) {
-      await usersClient.addSkillToUser(order.userId, {
-        skillId: item.skillId,
-        name: item.skillName
-      });
-    }
-
-    // Actualizar pedido
-    const updatedOrder = db.updateOrder(id, {
-      status: 'completed',
-      completedAt: new Date().toISOString()
-    });
-
-    // Enviar notificación
-    await notificationsClient.createNotification({
-      userId: order.userId,
-      message: `Tu pedido ${id} ha sido completado exitosamente`
-    });
-
-    res.status(200).json({
-      success: true,
-      data: updatedOrder,
-      message: 'Pedido completado exitosamente'
-    });
-
     } catch (error) {
       const serviceError = getServiceError(error, 'Error interno del servidor');
       console.error('Error procesando pedido:', serviceError.message);
+
       return res.status(serviceError.status).json({
         success: false,
         message: serviceError.message
@@ -147,29 +246,88 @@ const createOrdersController = (deps) => {
     }
   };
 
-  const cancelOrder = (req, res) => {
+  const cancelOrder = async (req, res) => {
     const id = req.params.id;
-    const deleted = db.deleteOrder(id);
+    const client = await pool.connect();
 
-  if (!deleted) {
-    return res.status(404).json({
-      success: false,
-      message: 'Pedido no encontrado'
-    });
-  }
+    try {
+      await client.query('BEGIN');
 
-    res.status(204).send();
+      await client.query(
+        'DELETE FROM cart_items WHERE order_id = $1',
+        [id]
+      );
+
+      const result = await client.query(
+        'DELETE FROM orders WHERE id = $1',
+        [id]
+      );
+
+      if (result.rowCount === 0) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({
+          success: false,
+          message: 'Pedido no encontrado'
+        });
+      }
+
+      await client.query('COMMIT');
+      res.status(204).send();
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error(error);
+      res.status(500).json({
+        success: false,
+        message: 'Error eliminando pedido'
+      });
+    } finally {
+      client.release();
+    }
   };
 
-  const getUserOrders = (req, res) => {
+  const getUserOrders = async (req, res) => {
     const userId = req.params.userId;
-    const orders = db.getUserOrders(userId);
 
-    res.status(200).json({
-      success: true,
-      data: orders,
-      message: `Pedidos del usuario ${userId}`
-    });
+    try {
+      const ordersResult = await pool.query(
+        `SELECT id, user_id, status, created_at
+         FROM orders
+         WHERE user_id = $1
+         ORDER BY created_at ASC`,
+        [userId]
+      );
+
+      const orders = [];
+
+      for (const order of ordersResult.rows) {
+        const itemsResult = await pool.query(
+          `SELECT product_id AS "skillId", quantity
+           FROM cart_items
+           WHERE order_id = $1`,
+          [order.id]
+        );
+
+        orders.push({
+          id: order.id,
+          userId: order.user_id,
+          status: order.status,
+          createdAt: order.created_at,
+          items: itemsResult.rows
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        data: orders,
+        message: `Pedidos del usuario ${userId}`
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({
+        success: false,
+        message: 'Error obteniendo pedidos del usuario'
+      });
+    }
   };
 
   return {
