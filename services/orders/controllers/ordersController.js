@@ -179,7 +179,7 @@ const createOrdersController = (deps) => {
 
       for (const item of itemsResult.rows) {
         const skillResponse = await inventoryClient.getSkillById(item.skillId);
-        const skill = skillResponse.data.data;
+        const skill = skillResponse.data.data || skillResponse.data;
 
         if (skill.stock < item.quantity) {
           return res.status(409).json({
@@ -191,7 +191,7 @@ const createOrdersController = (deps) => {
         checkedSkills.push({
           skillId: item.skillId,
           quantity: item.quantity,
-          skillName: skill.name,
+          skillName: skill.name || `skill-${item.skillId}`,
           newStock: skill.stock - item.quantity
         });
       }
@@ -238,6 +238,11 @@ const createOrdersController = (deps) => {
     } catch (error) {
       const serviceError = getServiceError(error, 'Error interno del servidor');
       console.error('Error procesando pedido:', serviceError.message);
+      if (error.response?.data) {
+        console.error('Detalle servicio externo:', error.response.data);
+      } else {
+        console.error(error);
+      }
 
       return res.status(serviceError.status).json({
         success: false,

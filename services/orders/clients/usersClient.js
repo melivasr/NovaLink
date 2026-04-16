@@ -10,7 +10,7 @@ class UsersClient {
   }
 
   async addSkillToUser(userId, skill) {
-    return axios.put(`${this.baseUrl}/${userId}/skill`, skill);
+    return axios.put(`${this.baseUrl}/${userId}/skills`, skill);
   }
 }
 

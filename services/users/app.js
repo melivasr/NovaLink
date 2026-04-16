@@ -1,15 +1,15 @@
 const express = require('express');
 const app = express();
-const port = 3003;
+const port = Number(process.env.PORT) || 3001;
 
 app.use(express.json());
 
-const ordersRoutes = require('./routes/orders');
-app.use('/api/v1/orders', ordersRoutes);
+const usersRoutes = require('./routes/users');
+app.use('/api/v1/users', usersRoutes);
 
 app.get('/health', (req, res) => {
   res.status(200).json({
-    service: 'Orders Service',
+    service: 'Users Service',
     status: 'running',
     port: port
   });
@@ -17,14 +17,14 @@ app.get('/health', (req, res) => {
 
 app.get('/', (req, res) => {
   res.json({
-    message: 'Servicio de Pedidos',
+    message: 'Servicio de Usuarios',
     endpoints: {
-      orders: '/api/v1/orders',
+      users: '/api/v1/users',
       health: '/health'
     }
   });
 });
 
 app.listen(port, () => {
-  console.log(`Servicio de Pedidos corriendo en puerto ${port}`);
+  console.log(`Servicio de Usuarios corriendo en puerto ${port}`);
 });

@@ -12,29 +12,77 @@
 
 ## Instalación y Ejecución
 
+### Kubernetes local
+
+Para levantar todo el sistema en Minikube con un solo comando desde PowerShell:
+
+```powershell
+.\scripts\start-minikube.ps1
+```
+
+Para levantar el sistema y abrir automáticamente los 4 port-forwards locales (para probar desde navegador):
+
+```powershell
+.\scripts\start-all.ps1
+```
+
+Ese script:
+- construye las 4 imágenes
+- las carga en Minikube
+- aplica todos los manifiestos de `k8s/`
+- espera el rollout de los deployments
+
+### Ejecución manual de servicios
+
+Si quieres ejecutar un servicio individual en local, usa la carpeta bajo `services/`:
+
 ```bash
-cd service-users
+cd services/users
 npm install
-node app.js
+npm start
 ```
 
 ```bash
-cd service-inventory
+cd services/products
 npm install
-node app.js
+npm start
 ```
 
 ```bash
-cd service-orders
+cd services/orders
 npm install
-node app.js
+npm start
 ```
 
 ```bash
-cd service-notifications
+cd services/notifications
 npm install
-node app.js
+npm start
 ```
+
+## Ver Bases de Datos (Kubernetes)
+
+Para conectarte a cada base de datos PostgreSQL dentro del cluster:
+
+```powershell
+kubectl exec -it $(kubectl get pod -l component=users-db -o jsonpath='{.items[0].metadata.name}') -- psql -U novalink_user -d users_db
+kubectl exec -it $(kubectl get pod -l component=products-db -o jsonpath='{.items[0].metadata.name}') -- psql -U novalink_user -d products_db
+kubectl exec -it $(kubectl get pod -l component=orders-db -o jsonpath='{.items[0].metadata.name}') -- psql -U novalink_user -d orders_db
+```
+
+Comandos útiles dentro de `psql`:
+
+```sql
+\dt
+SELECT * FROM users;
+SELECT * FROM user_skills;
+SELECT * FROM products;
+SELECT * FROM orders;
+SELECT * FROM notifications;
+\q
+```
+
+Los comandos anteriores ya buscan el pod actual automáticamente por label.
 
 ## Endpoints
 

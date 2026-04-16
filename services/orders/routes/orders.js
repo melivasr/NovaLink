@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../data/db');
 const createOrdersController = require('../controllers/ordersController');
 const UsersClient = require('../clients/usersClient');
 const InventoryClient = require('../clients/inventoryClient');
@@ -13,7 +12,6 @@ const notificationsClient = new NotificationsClient(services.notificationsBaseUr
 
 const {getOrderById, createOrder, checkoutOrder, cancelOrder,
   getUserOrders} = createOrdersController({
-  db,
   usersClient,
   inventoryClient,
   notificationsClient,
