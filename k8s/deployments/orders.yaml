@@ -1,0 +1,175 @@
+# ═══════════════════════════════════════════════════════════
+#  Orders Service — Deployment + Service
+#  (Depende de users-service y products-service)
+# ═══════════════════════════════════════════════════════════
+
+# ─── Base de datos PostgreSQL para Pedidos ────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orders-db
+  labels:
+    app: novalink
+    component: orders-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: orders-db
+  template:
+    metadata:
+      labels:
+        app: novalink
+        component: orders-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: novalink-secrets
+                  key: ORDERS_DB_NAME
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: novalink-secrets
+                  key: DB_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: novalink-secrets
+                  key: DB_PASSWORD
+          volumeMounts:
+            - name: orders-db-storage
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "novalink_user", "-d", "orders_db"]
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      volumes:
+        - name: orders-db-storage
+          emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: orders-db
+  labels:
+    app: novalink
+    component: orders-db
+spec:
+  selector:
+    component: orders-db
+  ports:
+    - port: 5432
+      targetPort: 5432
+  type: ClusterIP
+
+---
+# ─── Servicio de Pedidos ──────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orders-service
+  labels:
+    app: novalink
+    component: orders-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: orders-service
+  template:
+    metadata:
+      labels:
+        app: novalink
+        component: orders-service
+    spec:
+      containers:
+        - name: orders
+          image: novalink/orders-service:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 3003
+          env:
+            - name: PORT
+              value: "3003"
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: novalink-config
+                  key: NODE_ENV
+            - name: DB_HOST
+              value: "orders-db"
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: novalink-config
+                  key: DB_PORT
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: novalink-secrets
+                  key: ORDERS_DB_NAME
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: novalink-secrets
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: novalink-secrets
+                  key: DB_PASSWORD
+            # ── URLs para comunicación inter-servicios ──────
+            # En K8s los servicios se resuelven por nombre (DNS interno)
+            - name: USERS_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: novalink-config
+                  key: USERS_SERVICE_URL
+            - name: PRODUCTS_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: novalink-config
+                  key: PRODUCTS_SERVICE_URL
+            - name: NOTIFICATIONS_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: novalink-config
+                  key: NOTIFICATIONS_SERVICE_URL
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3003
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3003
+            initialDelaySeconds: 30
+            periodSeconds: 20
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: orders-service
+  labels:
+    app: novalink
+    component: orders-service
+spec:
+  selector:
+    component: orders-service
+  ports:
+    - port: 3003
+      targetPort: 3003
+      nodePort: 30003
+  type: NodePort

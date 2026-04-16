@@ -1,0 +1,26 @@
+# ══════════════════════════════════════════════════════════
+#  ConfigMap — Variables de entorno compartidas
+#  (No incluye secretos: passwords van en Secret)
+# ══════════════════════════════════════════════════════════
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: novalink-config
+  namespace: default
+  labels:
+    app: novalink
+data:
+  NODE_ENV: "production"
+  DB_PORT: "5432"
+  DB_USER: "novalink_user"
+
+  # Puertos de cada servicio
+  USERS_PORT: "3001"
+  PRODUCTS_PORT: "3002"
+  ORDERS_PORT: "3003"
+  NOTIFICATIONS_PORT: "3004"
+
+  # URLs de comunicación interna entre servicios (nombre del Service en K8s)
+  USERS_SERVICE_URL: "http://users-service:3001"
+  PRODUCTS_SERVICE_URL: "http://products-service:3002"
+  NOTIFICATIONS_SERVICE_URL: "http://notifications-service:3004"
