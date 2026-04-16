@@ -2,7 +2,12 @@ $ErrorActionPreference = 'Stop'
 
 function Get-PodByComponent {
     param([string]$Component)
-    return (kubectl get pod -l "component=$Component" -o jsonpath='{.items[0].metadata.name}')
+    $pod = (kubectl get pod -l "component=$Component" -o jsonpath='{.items[0].metadata.name}')
+    if ([string]::IsNullOrWhiteSpace($pod)) {
+        throw "No pod found for component '$Component'."
+    }
+
+    return $pod
 }
 
 function Exec-Sql {

@@ -60,6 +60,30 @@ npm install
 npm start
 ```
 
+## Ver Bases de Datos (Kubernetes)
+
+Para conectarte a cada base de datos PostgreSQL dentro del cluster:
+
+```powershell
+kubectl exec -it $(kubectl get pod -l component=users-db -o jsonpath='{.items[0].metadata.name}') -- psql -U novalink_user -d users_db
+kubectl exec -it $(kubectl get pod -l component=products-db -o jsonpath='{.items[0].metadata.name}') -- psql -U novalink_user -d products_db
+kubectl exec -it $(kubectl get pod -l component=orders-db -o jsonpath='{.items[0].metadata.name}') -- psql -U novalink_user -d orders_db
+```
+
+Comandos útiles dentro de `psql`:
+
+```sql
+\dt
+SELECT * FROM users;
+SELECT * FROM user_skills;
+SELECT * FROM products;
+SELECT * FROM orders;
+SELECT * FROM notifications;
+\q
+```
+
+Los comandos anteriores ya buscan el pod actual automáticamente por label.
+
 ## Endpoints
 
 ### Users Service (3001)
