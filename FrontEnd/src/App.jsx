@@ -5,6 +5,8 @@ import RegisterPage from './pages/RegisterPage'
 import CatalogPage from './pages/CatalogPage'
 import OrdersPage from './pages/OrdersPage'
 import NotificationsPage from './pages/NotificationsPage'
+import logo from './assets/Novalinklogo_negro.png'
+
 
 function Layout() {
   const location = useLocation()
@@ -12,6 +14,7 @@ function Layout() {
 
   return (
     <>
+     <img src={logo} alt="Logo" style={{ width: '400px', margin: '1.5rem auto', display: 'block' }} />
       {!hideNavbar && <Navbar />}
       <Routes>
         <Route path="/" element={<LoginPage />} />
