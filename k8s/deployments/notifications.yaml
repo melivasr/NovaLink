@@ -1,0 +1,88 @@
+# ═══════════════════════════════════════════════════════════
+#  Notifications Service — Deployment + Service
+#  (Sin base de datos propia; simula envío por logs)
+# ═══════════════════════════════════════════════════════════
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notifications-service
+  labels:
+    app: novalink
+    component: notifications-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: notifications-service
+  template:
+    metadata:
+      labels:
+        app: novalink
+        component: notifications-service
+    spec:
+      containers:
+        - name: notifications
+          image: novalink/notifications-service:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 3004
+          env:
+            - name: PORT
+              value: "3004"
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: novalink-config
+                  key: NODE_ENV
+            - name: DB_HOST
+              value: "orders-db"
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: novalink-config
+                  key: DB_PORT
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: novalink-secrets
+                  key: ORDERS_DB_NAME
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: novalink-secrets
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: novalink-secrets
+                  key: DB_PASSWORD
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3004
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3004
+            initialDelaySeconds: 20
+            periodSeconds: 20
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notifications-service
+  labels:
+    app: novalink
+    component: notifications-service
+spec:
+  selector:
+    component: notifications-service
+  ports:
+    - port: 3004
+      targetPort: 3004
+      nodePort: 30004
+  type: NodePort

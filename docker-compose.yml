@@ -1,0 +1,169 @@
+version: "3.9"
+
+# ═══════════════════════════════════════════════════════════
+#  NovaLink — Docker Compose (Desarrollo Local)
+#  Levanta los 4 servicios + sus bases de datos PostgreSQL
+# ═══════════════════════════════════════════════════════════
+
+networks:
+  novalink-network:
+    driver: bridge
+
+# ─── Volúmenes persistentes para cada DB ────────────────────
+volumes:
+  users-db-data:
+  products-db-data:
+  orders-db-data:
+
+# ─── Servicios ──────────────────────────────────────────────
+services:
+
+  # ── Base de datos: Usuarios ────────────────────────────────
+  users-db:
+    image: postgres:16-alpine
+    container_name: novalink-users-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: users_db
+      POSTGRES_USER: novalink_user
+      POSTGRES_PASSWORD: novalink_pass
+    volumes:
+      - users-db-data:/var/lib/postgresql/data
+    networks:
+      - novalink-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U novalink_user -d users_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Servicio: Usuarios (puerto 3001) ───────────────────────
+  users-service:
+    build:
+      context: ./services/users
+      target: production
+    container_name: novalink-users
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: 3001
+      NODE_ENV: development
+      DB_HOST: users-db
+      DB_PORT: 5432
+      DB_NAME: users_db
+      DB_USER: novalink_user
+      DB_PASSWORD: novalink_pass
+    depends_on:
+      users-db:
+        condition: service_healthy
+    networks:
+      - novalink-network
+
+  # ── Base de datos: Productos ───────────────────────────────
+  products-db:
+    image: postgres:16-alpine
+    container_name: novalink-products-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: products_db
+      POSTGRES_USER: novalink_user
+      POSTGRES_PASSWORD: novalink_pass
+    volumes:
+      - products-db-data:/var/lib/postgresql/data
+    networks:
+      - novalink-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U novalink_user -d products_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Servicio: Productos / Habilidades (puerto 3002) ────────
+  products-service:
+    build:
+      context: ./services/products
+      target: production
+    container_name: novalink-products
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    environment:
+      PORT: 3002
+      NODE_ENV: development
+      DB_HOST: products-db
+      DB_PORT: 5432
+      DB_NAME: products_db
+      DB_USER: novalink_user
+      DB_PASSWORD: novalink_pass
+    depends_on:
+      products-db:
+        condition: service_healthy
+    networks:
+      - novalink-network
+
+  # ── Base de datos: Pedidos ─────────────────────────────────
+  orders-db:
+    image: postgres:16-alpine
+    container_name: novalink-orders-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: orders_db
+      POSTGRES_USER: novalink_user
+      POSTGRES_PASSWORD: novalink_pass
+    volumes:
+      - orders-db-data:/var/lib/postgresql/data
+    networks:
+      - novalink-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U novalink_user -d orders_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Servicio: Pedidos (puerto 3003) ────────────────────────
+  orders-service:
+    build:
+      context: ./services/orders
+      target: production
+    container_name: novalink-orders
+    restart: unless-stopped
+    ports:
+      - "3003:3003"
+    environment:
+      PORT: 3003
+      NODE_ENV: development
+      DB_HOST: orders-db
+      DB_PORT: 5432
+      DB_NAME: orders_db
+      DB_USER: novalink_user
+      DB_PASSWORD: novalink_pass
+      # URLs internas para comunicación entre servicios
+      USERS_SERVICE_URL: http://users-service:3001
+      PRODUCTS_SERVICE_URL: http://products-service:3002
+      NOTIFICATIONS_SERVICE_URL: http://notifications-service:3004
+    depends_on:
+      orders-db:
+        condition: service_healthy
+      users-service:
+        condition: service_started
+      products-service:
+        condition: service_started
+    networks:
+      - novalink-network
+
+  # ── Servicio: Notificaciones (puerto 3004) ─────────────────
+  # Las notificaciones no necesitan DB propia; simulan logs/consola
+  notifications-service:
+    build:
+      context: ./services/notifications
+      target: production
+    container_name: novalink-notifications
+    restart: unless-stopped
+    ports:
+      - "3004:3004"
+    environment:
+      PORT: 3004
+      NODE_ENV: development
+    networks:
+      - novalink-network
