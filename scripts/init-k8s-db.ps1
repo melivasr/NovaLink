@@ -39,4 +39,7 @@ Exec-Sql -Pod $ordersDbPod -Database 'orders_db' -Sql "CREATE TABLE IF NOT EXIST
 Exec-Sql -Pod $ordersDbPod -Database 'orders_db' -Sql 'CREATE TABLE IF NOT EXISTS cart_items (order_id UUID NOT NULL REFERENCES orders(id), product_id UUID NOT NULL, quantity INT NOT NULL DEFAULT 1 CHECK (quantity > 0), PRIMARY KEY (order_id, product_id));'
 Exec-Sql -Pod $ordersDbPod -Database 'orders_db' -Sql "CREATE TABLE IF NOT EXISTS notifications (id UUID PRIMARY KEY DEFAULT (md5(random()::text || clock_timestamp()::text))::uuid, user_id UUID NOT NULL, order_id UUID NOT NULL REFERENCES orders(id), message TEXT NOT NULL, is_read BOOLEAN NOT NULL DEFAULT FALSE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"
 
-Write-Host 'Database schemas initialized.'
+Write-Host 'Seeding products_db...'
+Exec-Sql -Pod $productsDbPod -Database 'products_db' -Sql "INSERT INTO products (name, difficulty, xp_points, stock) VALUES ('Empatia', 'Facil', 3, 100), ('Amistad', 'Facil', 2, 100), ('Escucha Activa', 'Facil', 3, 100), ('Respeto', 'Facil', 2, 100), ('Humor', 'Facil', 1, 100), ('Comunicacion Asertiva', 'Medio', 5, 80), ('Colaboracion', 'Medio', 5, 80), ('Paciencia', 'Medio', 6, 80), ('Confianza', 'Medio', 5, 80), ('Adaptabilidad', 'Medio', 6, 80), ('Liderazgo', 'Dificil', 8, 50), ('Resiliencia', 'Dificil', 9, 50), ('Sagacidad', 'Dificil', 8, 50), ('Creatividad', 'Dificil', 7, 50), ('Iniciativa', 'Dificil', 7, 50) ON CONFLICT (name) DO NOTHING;"
+
+Write-Host 'Database schemas initialized and seeded.'

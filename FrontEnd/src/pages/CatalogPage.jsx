@@ -1,5 +1,151 @@
+import { useEffect, useState } from 'react'
+import { getSkills } from '../services/productsService'
+
+const difficultyColor = {
+  Facil: '#6FCF97',
+  Medio: '#F2C94C',
+  Dificil: '#EB5757',
+}
+
+function SkillCard({ skill, onAdd }) {
+  return (
+    <div style={styles.card}>
+      <div style={styles.cardHeader}>
+        <span style={styles.name}>{skill.name}</span>
+        <span style={{ ...styles.badge, color: difficultyColor[skill.difficulty], borderColor: difficultyColor[skill.difficulty] }}>
+          {skill.difficulty}
+        </span>
+      </div>
+      <div style={styles.info}>
+        <span>⭐ {skill.xp_points} XP</span>
+        <span>📦 Stock: {skill.stock}</span>
+      </div>
+      <button
+        style={{ ...styles.btn, opacity: skill.stock === 0 ? 0.4 : 1 }}
+        disabled={skill.stock === 0}
+        onClick={() => onAdd(skill)}
+      >
+        {skill.stock === 0 ? 'Sin stock' : 'Agregar al carrito'}
+      </button>
+    </div>
+  )
+}
+
 function CatalogPage() {
-  return <h1>Catálogo de Habilidades</h1>
+  const [skills, setSkills] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [cart, setCart] = useState([])
+  const [msg, setMsg] = useState('')
+
+  useEffect(() => {
+    getSkills()
+      .then(setSkills)
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false))
+  }, [])
+
+  function handleAdd(skill) {
+    const already = cart.find((i) => i.id === skill.id)
+    if (already) {
+      setMsg(`"${skill.name}" ya está en el carrito`)
+    } else {
+      setCart([...cart, { ...skill, quantity: 1 }])
+      setMsg(`"${skill.name}" agregado al carrito`)
+    }
+    setTimeout(() => setMsg(''), 2500)
+  }
+
+  if (loading) return <p style={styles.center}>Cargando habilidades...</p>
+  if (error) return <p style={{ ...styles.center, color: '#ff6b6b' }}>{error}</p>
+
+  return (
+    <div style={styles.page}>
+      <h2 style={styles.title}>Catálogo de Habilidades</h2>
+
+      {msg && <div style={styles.toast}>{msg}</div>}
+
+      <div style={styles.grid}>
+        {skills.map((skill) => (
+          <SkillCard key={skill.id} skill={skill} onAdd={handleAdd} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+const styles = {
+  page: {
+    maxWidth: '1100px',
+    margin: '2rem auto',
+    padding: '0 1.5rem',
+  },
+  title: {
+    color: '#EEEEEE',
+    fontSize: '22px',
+    fontWeight: 500,
+    marginBottom: '1.5rem',
+  },
+  grid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+    gap: '1rem',
+  },
+  card: {
+    background: '#1a1a1a',
+    border: '1px solid #2FA084',
+    borderRadius: '12px',
+    padding: '1.25rem',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.75rem',
+  },
+  cardHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  name: {
+    color: '#EEEEEE',
+    fontWeight: 500,
+    fontSize: '15px',
+  },
+  badge: {
+    fontSize: '12px',
+    border: '1px solid',
+    borderRadius: '6px',
+    padding: '2px 8px',
+  },
+  info: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    fontSize: '13px',
+    color: '#6FCF97',
+  },
+  btn: {
+    padding: '8px',
+    background: '#1F6F5F',
+    border: 'none',
+    borderRadius: '8px',
+    color: '#EEEEEE',
+    fontSize: '14px',
+    cursor: 'pointer',
+    transition: 'background 0.2s',
+  },
+  center: {
+    textAlign: 'center',
+    marginTop: '4rem',
+    color: '#EEEEEE',
+  },
+  toast: {
+    background: '#1a1a1a',
+    border: '1px solid #2FA084',
+    color: '#6FCF97',
+    borderRadius: '8px',
+    padding: '10px 14px',
+    marginBottom: '1rem',
+    fontSize: '13px',
+  },
 }
 
 export default CatalogPage
