@@ -5,6 +5,7 @@ import '../styles/forms.css'
 function RegisterPage() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
@@ -20,7 +21,7 @@ function RegisterPage() {
       const response = await fetch('http://localhost:3001/api/v1/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email })
+        body: JSON.stringify({ name, email, password })
       })
 
       if (!response.ok) throw new Error('Error al registrar usuario')
@@ -54,6 +55,17 @@ function RegisterPage() {
               required
             />
           </div>
+
+          <div className="form-group">
+          <label>Contraseña</label>
+          <input
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </div>
 
           <div className="form-group">
             <label>Correo electrónico</label>
