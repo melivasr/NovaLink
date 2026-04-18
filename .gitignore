@@ -1,4 +1,6 @@
-/service-users/node_modules
-/service-inventory/node_modules
-/service-orders/node_modules
-/service-notifications/node_modules
+node_modules/
+services/users/node_modules
+services/products/node_modules
+services/orders/node_modules
+services/notifications/node_modules
+FrontEnd/node_modules
