@@ -26,9 +26,12 @@ function RegisterPage() {
       })
 
       if (!response.ok) throw new Error('Error al registrar usuario')
-
-      setSuccess('Usuario registrado correctamente')
-      setTimeout(() => navigate('/catalog'), 1500)
+        const data = await response.json()
+        localStorage.setItem('userId', data.data.id)
+        localStorage.setItem('userEmail', data.data.email)
+        localStorage.setItem('userName', data.data.name)
+        setSuccess('Usuario registrado correctamente')
+        setTimeout(() => navigate('/catalog'), 1500)
     } catch (err) {
       setError(err.message)
     } finally {

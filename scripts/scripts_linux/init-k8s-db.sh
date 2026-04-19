@@ -5,7 +5,6 @@ exec_sql() {
   local POD=$1
   local DATABASE=$2
   local SQL=$3
-
   kubectl exec "$POD" -- psql -U novalink_user -d "$DATABASE" -v ON_ERROR_STOP=1 -c "$SQL"
   if [ $? -ne 0 ]; then
     echo "SQL execution failed for database $DATABASE"
@@ -40,4 +39,7 @@ exec_sql "$ORDERS_DB_POD" "orders_db" "CREATE TABLE IF NOT EXISTS orders (id UUI
 exec_sql "$ORDERS_DB_POD" "orders_db" "CREATE TABLE IF NOT EXISTS cart_items (order_id UUID NOT NULL REFERENCES orders(id), product_id UUID NOT NULL, quantity INT NOT NULL DEFAULT 1 CHECK (quantity > 0), PRIMARY KEY (order_id, product_id));"
 exec_sql "$ORDERS_DB_POD" "orders_db" "CREATE TABLE IF NOT EXISTS notifications (id UUID PRIMARY KEY DEFAULT (md5(random()::text || clock_timestamp()::text))::uuid, user_id UUID NOT NULL, order_id UUID NOT NULL REFERENCES orders(id), message TEXT NOT NULL, is_read BOOLEAN NOT NULL DEFAULT FALSE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"
 
-echo "Database schemas initialized."
+echo "Seeding products_db..."
+exec_sql "$PRODUCTS_DB_POD" "products_db" "INSERT INTO products (name, difficulty, xp_points, stock) VALUES ('Empatia', 'Facil', 3, 100), ('Amistad', 'Facil', 2, 100), ('Escucha Activa', 'Facil', 3, 100), ('Respeto', 'Facil', 2, 100), ('Humor', 'Facil', 1, 100), ('Comunicacion Asertiva', 'Medio', 5, 80), ('Colaboracion', 'Medio', 5, 80), ('Paciencia', 'Medio', 6, 80), ('Confianza', 'Medio', 5, 80), ('Adaptabilidad', 'Medio', 6, 80), ('Liderazgo', 'Dificil', 8, 50), ('Resiliencia', 'Dificil', 9, 50), ('Sagacidad', 'Dificil', 8, 50), ('Creatividad', 'Dificil', 7, 50), ('Iniciativa', 'Dificil', 7, 50) ON CONFLICT (name) DO NOTHING;"
+
+echo "Database schemas initialized and seeded."

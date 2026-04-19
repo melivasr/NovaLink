@@ -2,6 +2,9 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import '../styles/forms.css'
 
+// TODO: cuando el backend implemente JWT, guardar token aquí POR AHORA NO
+// localStorage.setItem('token', data.token)
+
 function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -13,23 +16,22 @@ function LoginPage() {
     e.preventDefault()
     setError('')
     setLoading(true)
-
+  
     try {
-      // const response = await fetch('http://localhost:3001/api/v1/users/login', {
-      const response = await fetch('/api/users/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) throw new Error(data.message)
-
-      localStorage.setItem('userId', data.data.id)
-      localStorage.setItem('userEmail', data.data.email)
-      localStorage.setItem('userName', data.data.name)
-
+      // TODO: reemplazar con fetch real cuando el equipo rebuilde la imagen
+      // const response = await fetch('/api/users/login', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ email, password })
+      // })
+      // const data = await response.json()
+      // if (!response.ok) throw new Error(data.message)
+      // localStorage.setItem('userId', data.data.id)
+      // localStorage.setItem('userEmail', data.data.email)
+      // localStorage.setItem('userName', data.data.name)
+  
+      // Login falso por ahora
+      localStorage.setItem('userEmail', email)
       navigate('/catalog')
     } catch (err) {
       setError(err.message)
@@ -37,7 +39,6 @@ function LoginPage() {
       setLoading(false)
     }
   }
-
   return (
     <div className="form-wrapper">
       
