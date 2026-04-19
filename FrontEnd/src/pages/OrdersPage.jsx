@@ -20,7 +20,7 @@ function OrdersPage() {
 
     try {
       const order = await createOrder(userId, cart)
-      await checkoutOrder(order.id)
+      await checkoutOrder(order.data.id)
       setSuccess('¡Orden completada! Habilidades adquiridas.')
       clearCart()
       setTimeout(() => navigate('/catalog'), 2000)
