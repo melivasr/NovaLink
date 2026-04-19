@@ -334,5 +334,43 @@ const removeSkillFromUser = async (req, res) => {
   }
 };
 
+
+const loginUser = async (req, res) => {
+  const { email, password } = req.body
+
+  if (!email || !password) {
+    return res.status(400).json({
+      success: false,
+      message: 'Email y password son requeridos'
+    })
+  }
+
+  try {
+    const results = await pool.query(
+      'SELECT id, name, email FROM users WHERE email = $1 AND password_hash = $2',
+      [email, password]
+    )
+
+    if (results.rows.length === 0) {
+      return res.status(401).json({
+        success: false,
+        message: 'Email o password incorrectos'
+      })
+    }
+
+    res.status(200).json({
+      success: true,
+      data: results.rows[0],
+      message: 'Login exitoso'
+    })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({
+      success: false,
+      message: 'Error en login'
+    })
+  }
+}
+
 module.exports = {getUserById, createUser, updateUser,
-  deleteUser, getUserSkills, addSkillToUser, removeSkillFromUser};
+  deleteUser, getUserSkills, addSkillToUser, removeSkillFromUser, loginUser};

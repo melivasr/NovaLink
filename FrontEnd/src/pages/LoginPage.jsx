@@ -4,22 +4,37 @@ import '../styles/forms.css'
 
 function LoginPage() {
   const [email, setEmail] = useState('')
-  const [error, setError] = useState('')
   const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+    setLoading(true)
 
-    if (!email) {
-      setError('Ingresa tu correo electrónico')
-      return
+    try {
+      const response = await fetch('http://localhost:3001/api/v1/users/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) throw new Error(data.message)
+
+      localStorage.setItem('userId', data.data.id)
+      localStorage.setItem('userEmail', data.data.email)
+      localStorage.setItem('userName', data.data.name)
+
+      navigate('/catalog')
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
     }
-
-    // TODO: reemplazar con POST /api/v1/auth/login cuando esté listo
-    localStorage.setItem('userEmail', email)
-    navigate('/catalog')
   }
 
   return (
@@ -27,7 +42,7 @@ function LoginPage() {
       
       <div className="form-card">
         <h2 className="form-title">Iniciar sesión</h2>
-        <p className="form-subtitle">Ingresa tu correo para continuar</p>
+        <p className="form-subtitle">Ingresa tus datos para continuar</p>
 
         {error && <div className="form-error">{error}</div>}
 
@@ -54,8 +69,8 @@ function LoginPage() {
             />
           </div>
 
-          <button className="btn" type="submit">
-            Entrar
+          <button className="btn" type="submit" disabled={loading}>
+            {loading ? 'Entrando...' : 'Entrar'}
           </button>
         </form>
 

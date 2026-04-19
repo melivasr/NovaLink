@@ -5,7 +5,7 @@ import RegisterPage from './pages/RegisterPage'
 import CatalogPage from './pages/CatalogPage'
 import OrdersPage from './pages/OrdersPage'
 import NotificationsPage from './pages/NotificationsPage'
-import logo from './assets/Novalinklogo_negro.png'
+import logo from './assets/logo.png'
 
 
 function Layout() {
