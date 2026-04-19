@@ -8,6 +8,18 @@ const pool = new Pool({
   port: process.env.DB_PORT || 5432
 });
 
+const getAllUsers = async (req, res) => {
+  try {
+    const results = await pool.query(
+      'SELECT id, name, email, created_at FROM users ORDER BY created_at ASC'
+    );
+    res.status(200).json({ success: true, data: results.rows });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Error obteniendo usuarios' });
+  }
+};
+
 const getUserById = async (req, res) => {
   const id = req.params.id;
 
@@ -372,5 +384,5 @@ const loginUser = async (req, res) => {
   }
 }
 
-module.exports = {getUserById, createUser, updateUser,
+module.exports = {getAllUsers, getUserById, createUser, updateUser,
   deleteUser, getUserSkills, addSkillToUser, removeSkillFromUser, loginUser};
