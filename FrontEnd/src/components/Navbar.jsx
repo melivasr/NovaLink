@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom'
 
 function Navbar() {
+  const name  = localStorage.getItem('userName')
+  const email = localStorage.getItem('userEmail')
+
   return (
     <nav style={styles.nav}>
       <span style={styles.brand}>NovaLink</span>
@@ -10,7 +13,13 @@ function Navbar() {
         <Link to="/my-orders">Mis Órdenes</Link>
         <Link to="/my-skills">Mis Habilidades</Link>
         <Link to="/notifications">Notificaciones</Link>
-        <Link to="/">Cerrar Sesión</Link>
+        {name && (
+          <div style={styles.user}>
+            <span style={styles.userName}>{name}</span>
+            <span style={styles.userEmail}>{email}</span>
+          </div>
+        )}
+        <Link to="/" onClick={() => { localStorage.clear() }}>Cerrar Sesión</Link>
       </div>
     </nav>
   )
@@ -32,6 +41,23 @@ const styles = {
   links: {
     display: 'flex',
     gap: '1.5rem',
+    alignItems: 'center',
+  },
+  user: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    borderLeft: '1px solid #2FA084',
+    paddingLeft: '1rem',
+  },
+  userName: {
+    color: '#EEEEEE',
+    fontSize: '13px',
+    fontWeight: 500,
+  },
+  userEmail: {
+    color: '#6FCF97',
+    fontSize: '11px',
   },
 }
 
