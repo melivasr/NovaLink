@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getSkills } from '../services/productsService'
+import { getUserSkills } from '../services/usersService'
 import { useCart } from '../context/CartContext'
 
 const difficultyColor = {
@@ -9,9 +10,11 @@ const difficultyColor = {
   Dificil: '#EB5757',
 }
 
-function SkillCard({ skill, onAdd }) {
+function SkillCard({ skill, onAdd, owned }) {
+  const disabled = skill.stock === 0 || owned
+
   return (
-    <div style={styles.card}>
+    <div style={{ ...styles.card, borderColor: owned ? '#444' : '#2FA084' }}>
       <div style={styles.cardHeader}>
         <span style={styles.name}>{skill.name}</span>
         <span style={{ ...styles.badge, color: difficultyColor[skill.difficulty], borderColor: difficultyColor[skill.difficulty] }}>
@@ -23,11 +26,11 @@ function SkillCard({ skill, onAdd }) {
         <span>📦 Stock: {skill.stock}</span>
       </div>
       <button
-        style={{ ...styles.btn, opacity: skill.stock === 0 ? 0.4 : 1 }}
-        disabled={skill.stock === 0}
+        style={{ ...styles.btn, opacity: disabled ? 0.4 : 1 }}
+        disabled={disabled}
         onClick={() => onAdd(skill)}
       >
-        {skill.stock === 0 ? 'Sin stock' : 'Agregar al carrito'}
+        {owned ? 'Ya adquirida' : skill.stock === 0 ? 'Sin stock' : 'Agregar al carrito'}
       </button>
     </div>
   )
@@ -35,22 +38,34 @@ function SkillCard({ skill, onAdd }) {
 
 function CatalogPage() {
   const [skills, setSkills] = useState([])
+  const [ownedIds, setOwnedIds] = useState(new Set())
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [msg, setMsg] = useState('')
   const { cart, addToCart } = useCart()
   const navigate = useNavigate()
+  const userId = localStorage.getItem('userId')
 
   useEffect(() => {
-    getSkills()
-      .then(setSkills)
+    const fetchData = [getSkills()]
+    if (userId) fetchData.push(getUserSkills(userId))
+
+    Promise.all(fetchData)
+      .then(([allSkills, userSkillsRes]) => {
+        setSkills(allSkills)
+        if (userSkillsRes) {
+          const ids = new Set(userSkillsRes.data.map((s) => s.product_id))
+          setOwnedIds(ids)
+        }
+      })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false))
   }, [])
 
   function handleAdd(skill) {
-    const already = cart.find((i) => i.id === skill.id)
-    if (already) {
+    if (ownedIds.has(skill.id)) {
+      setMsg(`Ya tienes "${skill.name}"`)
+    } else if (cart.find((i) => i.id === skill.id)) {
       setMsg(`"${skill.name}" ya está en el carrito`)
     } else {
       addToCart(skill)
@@ -76,7 +91,7 @@ function CatalogPage() {
 
       <div style={styles.grid}>
         {skills.map((skill) => (
-          <SkillCard key={skill.id} skill={skill} onAdd={handleAdd} />
+          <SkillCard key={skill.id} skill={skill} onAdd={handleAdd} owned={ownedIds.has(skill.id)} />
         ))}
       </div>
     </div>

@@ -6,7 +6,9 @@ function Navbar() {
       <span style={styles.brand}>NovaLink</span>
       <div style={styles.links}>
         <Link to="/catalog">Catálogo</Link>
-        <Link to="/orders">Mis Órdenes</Link>
+        <Link to="/orders">Mi Carrito</Link>
+        <Link to="/my-orders">Mis Órdenes</Link>
+        <Link to="/my-skills">Mis Habilidades</Link>
         <Link to="/notifications">Notificaciones</Link>
         <Link to="/">Cerrar Sesión</Link>
       </div>
