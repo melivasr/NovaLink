@@ -35,6 +35,9 @@ foreach ($svc in $services) {
     kubectl rollout status deployment $deployments[$svc]
 }
 
+Write-Host 'Inicializando bases de datos...'
+& (Join-Path $PSScriptRoot 'init-k8s-db.ps1')
+
 Write-Host 'Abriendo port-forwards...'
 & (Join-Path $PSScriptRoot 'port-forward-all.ps1')
 

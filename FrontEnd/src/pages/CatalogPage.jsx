@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { getSkills } from '../services/productsService'
+import { useCart } from '../context/CartContext'
 
 const difficultyColor = {
   Facil: '#6FCF97',
@@ -35,8 +37,9 @@ function CatalogPage() {
   const [skills, setSkills] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [cart, setCart] = useState([])
   const [msg, setMsg] = useState('')
+  const { cart, addToCart } = useCart()
+  const navigate = useNavigate()
 
   useEffect(() => {
     getSkills()
@@ -50,7 +53,7 @@ function CatalogPage() {
     if (already) {
       setMsg(`"${skill.name}" ya está en el carrito`)
     } else {
-      setCart([...cart, { ...skill, quantity: 1 }])
+      addToCart(skill)
       setMsg(`"${skill.name}" agregado al carrito`)
     }
     setTimeout(() => setMsg(''), 2500)
@@ -64,6 +67,12 @@ function CatalogPage() {
       <h2 style={styles.title}>Catálogo de Habilidades</h2>
 
       {msg && <div style={styles.toast}>{msg}</div>}
+
+      {cart.length > 0 && (
+        <button style={styles.cartBtn} onClick={() => navigate('/orders')}>
+          🛒 Ver carrito ({cart.length})
+        </button>
+      )}
 
       <div style={styles.grid}>
         {skills.map((skill) => (
@@ -136,6 +145,16 @@ const styles = {
     textAlign: 'center',
     marginTop: '4rem',
     color: '#EEEEEE',
+  },
+  cartBtn: {
+    marginBottom: '1rem',
+    padding: '10px 20px',
+    background: '#1F6F5F',
+    border: 'none',
+    borderRadius: '8px',
+    color: '#EEEEEE',
+    fontSize: '14px',
+    cursor: 'pointer',
   },
   toast: {
     background: '#1a1a1a',
