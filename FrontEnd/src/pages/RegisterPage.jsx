@@ -31,7 +31,7 @@ function RegisterPage() {
         localStorage.setItem('userEmail', data.data.email)
         localStorage.setItem('userName', data.data.name)
         setSuccess('Usuario registrado correctamente')
-        setTimeout(() => navigate('/catalog'), 1500)
+        setTimeout(() => navigate('/'), 1500)
     } catch (err) {
       setError(err.message)
     } finally {
