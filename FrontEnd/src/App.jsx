@@ -10,7 +10,7 @@ import NotificationsPage from './pages/NotificationsPage'
 import AdminPage from './pages/AdminPage'
 import HomePage from './pages/HomePage'
 import logo from './assets/logo.png'
-
+import ConfigPage from './pages/ConfigPage'
 
 function Layout() {
   const location = useLocation()
@@ -30,6 +30,7 @@ function Layout() {
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/home" element={<HomePage />} />
+        <Route path="/config" element={<ConfigPage />} />
       </Routes>
     </>
   )

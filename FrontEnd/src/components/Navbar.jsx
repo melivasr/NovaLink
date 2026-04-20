@@ -9,10 +9,11 @@ function Navbar() {
       <div style={styles.links}>
         <Link to="/home">Inicio</Link>
         <Link to="/catalog">Catálogo</Link>
-        <Link to="/orders">Mi Carrito</Link>
-        <Link to="/my-orders">Mis Órdenes</Link>
-        <Link to="/my-skills">Mis Habilidades</Link>
+        <Link to="/orders">Carrito</Link>
+        <Link to="/my-orders">Órdenes</Link>
+        <Link to="/my-skills">Habilidades</Link>
         <Link to="/notifications">Notificaciones</Link>
+        <Link to="/config">Ajustes</Link>
         {isAdmin && <Link to="/admin" style={{ color: '#F2C94C' }}>Admin</Link>}
         <Link to="/" onClick={() => { localStorage.clear() }}>Cerrar Sesión</Link>
       </div>
