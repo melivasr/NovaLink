@@ -12,7 +12,7 @@ const pool = new Pool({
 const getAllSkills = async (req, res) => {
   try {
     const results = await pool.query(
-      'SELECT id, name, difficulty, xp_points AS points, stock, created_at FROM products ORDER BY created_at ASC'
+      'SELECT id, name, difficulty, xp_points, stock, is_activated, created_at FROM products ORDER BY created_at ASC'
     );
 
     res.status(200).json(results.rows);
@@ -28,7 +28,7 @@ const getSkillById = async (req, res) => {
 
   try {
     const results = await pool.query(
-      'SELECT id, name, difficulty, xp_points AS points, stock, created_at FROM products WHERE id = $1',
+      'SELECT id, name, difficulty, xp_points, stock, is_activated, created_at FROM products WHERE id = $1',
       [id]
     );
 
@@ -53,7 +53,7 @@ const createSkill = async (req, res) => {
 
   try {
     const results = await pool.query(
-      'INSERT INTO products (name, difficulty, xp_points, stock) VALUES ($1, $2, $3, $4) RETURNING *',
+      'INSERT INTO products (name, difficulty, xp_points, stock, is_activated) VALUES ($1, $2, $3, $4, TRUE) RETURNING *',
       [name, difficulty, points, stock]
     );
 
@@ -91,15 +91,18 @@ const updateSkill = async (req, res) => {
     const updatedStock = stock !== undefined ? stock : current.stock;
     const updatedPoints = points !== undefined ? points : current.xp_points;
 
+    const updatedActivated = req.body.is_activated !== undefined ? req.body.is_activated : current.is_activated;
+
     const results = await pool.query(
       `UPDATE products
        SET name = $1,
            difficulty = $2,
            xp_points = $3,
-           stock = $4
-       WHERE id = $5
+           stock = $4,
+           is_activated = $5
+       WHERE id = $6
        RETURNING *`,
-      [updatedName, updatedDifficulty, updatedPoints, updatedStock, id]
+      [updatedName, updatedDifficulty, updatedPoints, updatedStock, updatedActivated, id]
     );
 
     res.status(200).json(results.rows[0]);

@@ -52,7 +52,7 @@ function CatalogPage() {
 
     Promise.all(fetchData)
       .then(([allSkills, userSkillsRes]) => {
-        setSkills(allSkills)
+        setSkills(allSkills.filter((s) => s.is_activated))
         if (userSkillsRes) {
           const ids = new Set(userSkillsRes.data.map((s) => s.product_id))
           setOwnedIds(ids)
