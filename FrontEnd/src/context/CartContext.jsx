@@ -17,12 +17,17 @@ export function CartProvider({ children }) {
     setCart((prev) => prev.filter((i) => i.id !== skillId))
   }
 
+  function updateQuantity(skillId, quantity) {
+    if (quantity < 1) return
+    setCart((prev) => prev.map((i) => i.id === skillId ? { ...i, quantity } : i))
+  }
+
   function clearCart() {
     setCart([])
   }
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, clearCart }}>
+    <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart }}>
       {children}
     </CartContext.Provider>
   )

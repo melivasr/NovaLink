@@ -29,7 +29,8 @@ $ordersDbPod = Get-PodByComponent -Component 'orders-db'
 
 Write-Host 'Initializing users_db schema...'
 Exec-Sql -Pod $usersDbPod -Database 'users_db' -Sql "CREATE TABLE IF NOT EXISTS users (id UUID PRIMARY KEY DEFAULT (md5(random()::text || clock_timestamp()::text))::uuid, name VARCHAR(100) NOT NULL, email VARCHAR(150) NOT NULL UNIQUE, password_hash VARCHAR(255) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"
-Exec-Sql -Pod $usersDbPod -Database 'users_db' -Sql 'CREATE TABLE IF NOT EXISTS user_skills (user_id UUID NOT NULL REFERENCES users(id), product_id UUID NOT NULL, acquired_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (user_id, product_id));'
+Exec-Sql -Pod $usersDbPod -Database 'users_db' -Sql 'CREATE TABLE IF NOT EXISTS user_skills (user_id UUID NOT NULL REFERENCES users(id), product_id UUID NOT NULL, xp_accumulated INT NOT NULL DEFAULT 0, acquired_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (user_id, product_id));'
+Exec-Sql -Pod $usersDbPod -Database 'users_db' -Sql 'ALTER TABLE user_skills ADD COLUMN IF NOT EXISTS xp_accumulated INT NOT NULL DEFAULT 0;'
 
 Write-Host 'Initializing products_db schema...'
 Exec-Sql -Pod $productsDbPod -Database 'products_db' -Sql "CREATE TABLE IF NOT EXISTS products (id UUID PRIMARY KEY DEFAULT (md5(random()::text || clock_timestamp()::text))::uuid, name VARCHAR(100) NOT NULL UNIQUE, difficulty VARCHAR(20) NOT NULL, xp_points INT NOT NULL, stock INT NOT NULL DEFAULT 0, is_activated BOOLEAN NOT NULL DEFAULT TRUE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"

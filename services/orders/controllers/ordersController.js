@@ -192,7 +192,8 @@ const createOrdersController = (deps) => {
           skillId: item.skillId,
           quantity: item.quantity,
           skillName: skill.name || `skill-${item.skillId}`,
-          newStock: skill.stock - item.quantity
+          newStock: skill.stock - item.quantity,
+          xp_points: skill.xp_points || 0
         });
       }
 
@@ -204,7 +205,8 @@ const createOrdersController = (deps) => {
 
       for (const item of checkedSkills) {
         await usersClient.addSkillToUser(order.user_id, {
-          skillId: item.skillId
+          skillId: item.skillId,
+          xp: item.quantity * item.xp_points
         });
       }
 
