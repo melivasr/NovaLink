@@ -23,19 +23,45 @@ function AdminPage() {
   }, [])
 
   const toggleActivated = async (skill) => {
+    const newState = !skill.is_activated
     try {
       const res = await fetch(`/api/products/${skill.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ is_activated: !skill.is_activated }),
+        body: JSON.stringify({ is_activated: newState }),
       })
       if (!res.ok) throw new Error()
+  
       setSkills((prev) =>
-        prev.map((s) => s.id === skill.id ? { ...s, is_activated: !s.is_activated } : s)
+        prev.map((s) => s.id === skill.id ? { ...s, is_activated: newState } : s)
       )
-      setMsg(`"${skill.name}" ${!skill.is_activated ? 'activada' : 'desactivada'}`)
+  
+      const usersRes = await fetch('/api/users')
+      const usersData = await usersRes.json()
+      const allUsers = usersData.data || []
+      console.log('Usuarios encontrados:', allUsers.length, allUsers)
+  
+      await Promise.all(
+        allUsers.map(async (user) => {
+          const body = {
+            userId: user.id,
+            message: `La habilidad "${skill.name}" ha sido ${newState ? 'activada' : 'desactivada'}.`,
+          }
+          console.log('Enviando notificación a:', user.id, body)
+          const notifRes = await fetch('/api/notifications', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          })
+          const notifData = await notifRes.json()
+          console.log('Respuesta notificación:', notifRes.status, notifData)
+        })
+      )
+  
+      setMsg(`"${skill.name}" ${newState ? 'activada' : 'desactivada'}`)
       setTimeout(() => setMsg(''), 2500)
-    } catch {
+    } catch (e) {
+      console.error('Error:', e)
       setError('Error actualizando habilidad')
     }
   }
