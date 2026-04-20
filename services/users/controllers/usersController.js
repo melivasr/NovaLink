@@ -351,7 +351,7 @@ const loginUser = async (req, res) => {
 
   try {
     const results = await pool.query(
-      'SELECT id, name, email FROM users WHERE email = $1 AND password_hash = $2',
+      'SELECT id, name, email, is_admin FROM users WHERE email = $1 AND password_hash = $2',
       [email, password]
     )
 

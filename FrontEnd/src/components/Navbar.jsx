@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom'
 
 function Navbar() {
-  const name  = localStorage.getItem('userName')
-  const email = localStorage.getItem('userEmail')
+  const name    = localStorage.getItem('userName')
+  const email   = localStorage.getItem('userEmail')
+  const isAdmin = localStorage.getItem('isAdmin') === 'true'
 
   return (
     <nav style={styles.nav}>
@@ -13,6 +14,7 @@ function Navbar() {
         <Link to="/my-orders">Mis Órdenes</Link>
         <Link to="/my-skills">Mis Habilidades</Link>
         <Link to="/notifications">Notificaciones</Link>
+        {isAdmin && <Link to="/admin" style={{ color: '#F2C94C' }}>Admin</Link>}
         {name && (
           <div style={styles.user}>
             <span style={styles.userName}>{name}</span>
