@@ -1,7 +1,7 @@
 #!/bin/bash
-export PATH=$PATH:/usr/bin
-
 set -e
+
+export PATH=$PATH:/usr/bin
 
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$REPO_ROOT"
@@ -23,15 +23,9 @@ if ! kubectl cluster-info > /dev/null 2>&1; then
   exit 1
 fi
 
-# --- Build y carga de imágenes ---
-echo "Building service images..."
-
-SERVICES=(
-  "users-service:services/users:novalink/users-service:v3"
-  "products-service:services/products:novalink/products-service:v3"
-  "orders-service:services/orders:novalink/orders-service:v3"
-  "notifications-service:services/notifications:novalink/notifications-service:v3"
-)
+# --- Tag dinámico igual que en Windows ---
+IMAGE_TAG="dev-$(date +'%Y%m%d%H%M%S')"
+echo "Using image tag: $IMAGE_TAG"
 
 # --- Build y carga de imágenes ---
 echo "Building service images..."
@@ -45,10 +39,10 @@ build_and_load() {
   minikube -p minikube image load "$TAG"
 }
 
-build_and_load "users-service" "services/users" "novalink/users-service:v3"
-build_and_load "products-service" "services/products" "novalink/products-service:v3"
-build_and_load "orders-service" "services/orders" "novalink/orders-service:v3"
-build_and_load "notifications-service" "services/notifications" "novalink/notifications-service:v3"
+build_and_load "users-service"         "services/users"         "novalink/users-service:$IMAGE_TAG"
+build_and_load "products-service"      "services/products"      "novalink/products-service:$IMAGE_TAG"
+build_and_load "orders-service"        "services/orders"        "novalink/orders-service:$IMAGE_TAG"
+build_and_load "notifications-service" "services/notifications" "novalink/notifications-service:$IMAGE_TAG"
 
 # --- Aplicar manifiestos de Kubernetes ---
 echo "Applying Kubernetes manifests..."
@@ -67,10 +61,10 @@ bash "$(dirname "$0")/init-k8s-db.sh"
 
 # --- Actualizar imágenes en deployments ---
 echo "Updating deployments to the new image tags..."
-kubectl set image deployment/users-service users=novalink/users-service:v3
-kubectl set image deployment/products-service products=novalink/products-service:v3
-kubectl set image deployment/orders-service orders=novalink/orders-service:v3
-kubectl set image deployment/notifications-service notifications=novalink/notifications-service:v3
+kubectl set image deployment/users-service         users="novalink/users-service:$IMAGE_TAG"
+kubectl set image deployment/products-service      products="novalink/products-service:$IMAGE_TAG"
+kubectl set image deployment/orders-service        orders="novalink/orders-service:$IMAGE_TAG"
+kubectl set image deployment/notifications-service notifications="novalink/notifications-service:$IMAGE_TAG"
 
 # --- Esperar rollout ---
 echo "Waiting for rollout..."
