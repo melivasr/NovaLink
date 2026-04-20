@@ -197,7 +197,7 @@ const getUserSkills = async (req, res) => {
     }
 
     const skillsResult = await pool.query(
-      `SELECT product_id, acquired_at
+      `SELECT product_id, xp_accumulated, acquired_at
        FROM user_skills
        WHERE user_id = $1
        ORDER BY acquired_at ASC`,
@@ -220,7 +220,7 @@ const getUserSkills = async (req, res) => {
 
 const addSkillToUser = async (req, res) => {
   const id = req.params.id;
-  const { skillId } = req.body;
+  const { skillId, xp } = req.body;
 
   if (!skillId) {
     return res.status(400).json({
@@ -228,6 +228,8 @@ const addSkillToUser = async (req, res) => {
       message: 'skillId es requerido'
     });
   }
+
+  const xpToAdd = xp && xp > 0 ? xp : 0;
 
   try {
     const userResult = await pool.query(
@@ -242,26 +244,16 @@ const addSkillToUser = async (req, res) => {
       });
     }
 
-    const existingSkill = await pool.query(
-      'SELECT * FROM user_skills WHERE user_id = $1 AND product_id = $2',
-      [id, skillId]
-    );
-
-    if (existingSkill.rows.length > 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'El usuario ya posee esta habilidad'
-      });
-    }
-
     await pool.query(
-      `INSERT INTO user_skills (user_id, product_id)
-       VALUES ($1, $2)`,
-      [id, skillId]
+      `INSERT INTO user_skills (user_id, product_id, xp_accumulated)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (user_id, product_id)
+       DO UPDATE SET xp_accumulated = user_skills.xp_accumulated + EXCLUDED.xp_accumulated`,
+      [id, skillId, xpToAdd]
     );
 
     const updatedSkills = await pool.query(
-      `SELECT product_id, acquired_at
+      `SELECT product_id, xp_accumulated, acquired_at
        FROM user_skills
        WHERE user_id = $1
        ORDER BY acquired_at ASC`,
@@ -274,7 +266,7 @@ const addSkillToUser = async (req, res) => {
         user: userResult.rows[0],
         skills: updatedSkills.rows
       },
-      message: 'Habilidad agregada exitosamente'
+      message: 'Habilidad actualizada exitosamente'
     });
   } catch (error) {
     console.error(error);
@@ -359,7 +351,7 @@ const loginUser = async (req, res) => {
 
   try {
     const results = await pool.query(
-      'SELECT id, name, email FROM users WHERE email = $1 AND password_hash = $2',
+      'SELECT id, name, email, is_admin FROM users WHERE email = $1 AND password_hash = $2',
       [email, password]
     )
 

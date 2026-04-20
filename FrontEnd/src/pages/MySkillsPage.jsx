@@ -29,6 +29,7 @@ function MySkillsPage() {
 
         const enriched = userSkillsRes.data.map((s) => ({
           ...productMap[s.product_id],
+          xp_accumulated: s.xp_accumulated,
           acquired_at: s.acquired_at,
         })).filter((s) => s.id)
 
@@ -65,9 +66,9 @@ function MySkillsPage() {
               </span>
             </div>
             <div style={styles.info}>
-              <span>⭐ {skill.xp_points} XP</span>
+              <span>⭐ {skill.xp_accumulated} XP acumulados</span>
               <span style={{ color: '#888', fontSize: '12px' }}>
-                {new Date(skill.acquired_at).toLocaleDateString('es-ES')}
+                Desde {new Date(skill.acquired_at).toLocaleDateString('es-ES')}
               </span>
             </div>
           </div>
@@ -91,7 +92,7 @@ const styles = {
   },
   grid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+    gridTemplateColumns: 'repeat(3, 1fr)',
     gap: '1rem',
   },
   card: {

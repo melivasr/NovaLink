@@ -4,7 +4,7 @@ import { useCart } from '../context/CartContext'
 import { createOrder, checkoutOrder } from '../services/ordersService'
 
 function OrdersPage() {
-  const { cart, removeFromCart, clearCart } = useCart()
+  const { cart, removeFromCart, updateQuantity, clearCart } = useCart()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -55,19 +55,34 @@ function OrdersPage() {
       <div style={styles.list}>
         {cart.map((item) => (
           <div key={item.id} style={styles.item}>
-            <div>
+            <div style={{ flex: 1 }}>
               <span style={styles.name}>{item.name}</span>
-              <span style={styles.sub}> · {item.difficulty} · ⭐ {item.xp_points} XP</span>
+              <div style={styles.itemMeta}>
+                <span>💲{Number(item.price).toFixed(2)}/unidad · ⭐ {item.xp_points} XP/unidad</span>
+              </div>
+              <div style={styles.itemTotal}>
+                Subtotal: 💲{(item.price * item.quantity).toFixed(2)} · ⭐ {item.xp_points * item.quantity} XP
+              </div>
             </div>
-            <button style={styles.removeBtn} onClick={() => removeFromCart(item.id)}>
-              Quitar
-            </button>
+            <div style={styles.itemActions}>
+              <div style={styles.qtyControl}>
+                <button style={styles.qtyBtn} onClick={() => updateQuantity(item.id, item.quantity - 1)}>−</button>
+                <span style={styles.qtyValue}>{item.quantity}</span>
+                <button style={styles.qtyBtn} onClick={() => updateQuantity(item.id, item.quantity + 1)}>+</button>
+              </div>
+              <button style={styles.removeBtn} onClick={() => removeFromCart(item.id)}>Quitar</button>
+            </div>
           </div>
         ))}
       </div>
 
       <div style={styles.footer}>
-        <span style={{ color: '#6FCF97' }}>{cart.length} habilidad(es) seleccionada(s)</span>
+        <div>
+          <div style={{ color: '#6FCF97', fontSize: '13px' }}>{cart.length} habilidad(es) seleccionada(s)</div>
+          <div style={{ color: '#EEEEEE', fontSize: '16px', fontWeight: 500, marginTop: '4px' }}>
+            Total: 💲{cart.reduce((sum, i) => sum + i.price * i.quantity, 0).toFixed(2)}
+          </div>
+        </div>
         <button style={styles.btn} onClick={handleCheckout} disabled={loading}>
           {loading ? 'Procesando...' : 'Confirmar orden'}
         </button>
@@ -109,6 +124,44 @@ const styles = {
   sub: {
     color: '#6FCF97',
     fontSize: '13px',
+  },
+  itemMeta: {
+    color: '#888',
+    fontSize: '12px',
+    marginTop: '4px',
+  },
+  itemTotal: {
+    color: '#6FCF97',
+    fontSize: '13px',
+    marginTop: '4px',
+    fontWeight: 500,
+  },
+  itemActions: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+  },
+  qtyControl: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+  },
+  qtyBtn: {
+    background: '#2a2a2a',
+    border: '1px solid #444',
+    borderRadius: '4px',
+    color: '#EEEEEE',
+    width: '28px',
+    height: '28px',
+    cursor: 'pointer',
+    fontSize: '16px',
+    lineHeight: 1,
+  },
+  qtyValue: {
+    color: '#EEEEEE',
+    fontSize: '14px',
+    minWidth: '20px',
+    textAlign: 'center',
   },
   removeBtn: {
     background: 'transparent',

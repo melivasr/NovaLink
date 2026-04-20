@@ -60,6 +60,9 @@ function MyOrdersPage() {
               </span>
             </div>
             <p style={styles.date}>{new Date(order.createdAt).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            {order.totalAmount > 0 && (
+              <p style={styles.total}>Total pagado: 💲{Number(order.totalAmount).toFixed(2)}</p>
+            )}
             <div style={styles.items}>
               {order.items.map((item) => (
                 <span key={item.skillId} style={styles.item}>
@@ -76,7 +79,7 @@ function MyOrdersPage() {
 
 const styles = {
   page: {
-    maxWidth: '700px',
+    maxWidth: '1100px',
     margin: '2rem auto',
     padding: '0 1.5rem',
   },
@@ -87,8 +90,8 @@ const styles = {
     marginBottom: '1.5rem',
   },
   list: {
-    display: 'flex',
-    flexDirection: 'column',
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, 1fr)',
     gap: '1rem',
   },
   card: {
@@ -117,6 +120,12 @@ const styles = {
   date: {
     color: '#888',
     fontSize: '13px',
+    margin: '0 0 0.25rem',
+  },
+  total: {
+    color: '#6FCF97',
+    fontSize: '14px',
+    fontWeight: 500,
     margin: '0 0 0.75rem',
   },
   items: {

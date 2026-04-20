@@ -10,11 +10,11 @@ const difficultyColor = {
   Dificil: '#EB5757',
 }
 
-function SkillCard({ skill, onAdd, owned }) {
-  const disabled = skill.stock === 0 || owned
+function SkillCard({ skill, onAdd, ownedXp }) {
+  const disabled = skill.stock === 0
 
   return (
-    <div style={{ ...styles.card, borderColor: owned ? '#444' : '#2FA084' }}>
+    <div style={{ ...styles.card, borderColor: ownedXp > 0 ? '#2FA084' : '#444' }}>
       <div style={styles.cardHeader}>
         <span style={styles.name}>{skill.name}</span>
         <span style={{ ...styles.badge, color: difficultyColor[skill.difficulty], borderColor: difficultyColor[skill.difficulty] }}>
@@ -22,15 +22,21 @@ function SkillCard({ skill, onAdd, owned }) {
         </span>
       </div>
       <div style={styles.info}>
-        <span>⭐ {skill.xp_points} XP</span>
+        <span>⭐ {skill.xp_points} XP/unidad</span>
+        <span>💲{Number(skill.price).toFixed(2)}/unidad</span>
+      </div>
+      <div style={styles.info}>
         <span>📦 Stock: {skill.stock}</span>
       </div>
+      {ownedXp > 0 && (
+        <div style={styles.ownedBadge}>Tienes {ownedXp} XP en esta habilidad</div>
+      )}
       <button
         style={{ ...styles.btn, opacity: disabled ? 0.4 : 1 }}
         disabled={disabled}
         onClick={() => onAdd(skill)}
       >
-        {owned ? 'Ya adquirida' : skill.stock === 0 ? 'Sin stock' : 'Agregar al carrito'}
+        {skill.stock === 0 ? 'Sin stock' : ownedXp > 0 ? 'Agregar más XP' : 'Agregar al carrito'}
       </button>
     </div>
   )
@@ -38,7 +44,7 @@ function SkillCard({ skill, onAdd, owned }) {
 
 function CatalogPage() {
   const [skills, setSkills] = useState([])
-  const [ownedIds, setOwnedIds] = useState(new Set())
+  const [ownedIds, setOwnedIds] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [msg, setMsg] = useState('')
@@ -52,10 +58,11 @@ function CatalogPage() {
 
     Promise.all(fetchData)
       .then(([allSkills, userSkillsRes]) => {
-        setSkills(allSkills)
+        setSkills(allSkills.filter((s) => s.is_activated))
         if (userSkillsRes) {
-          const ids = new Set(userSkillsRes.data.map((s) => s.product_id))
-          setOwnedIds(ids)
+          const map = {}
+          userSkillsRes.data.forEach((s) => { map[s.product_id] = s.xp_accumulated })
+          setOwnedIds(map)
         }
       })
       .catch((e) => setError(e.message))
@@ -63,9 +70,7 @@ function CatalogPage() {
   }, [])
 
   function handleAdd(skill) {
-    if (ownedIds.has(skill.id)) {
-      setMsg(`Ya tienes "${skill.name}"`)
-    } else if (cart.find((i) => i.id === skill.id)) {
+    if (cart.find((i) => i.id === skill.id)) {
       setMsg(`"${skill.name}" ya está en el carrito`)
     } else {
       addToCart(skill)
@@ -83,6 +88,7 @@ function CatalogPage() {
 
       {msg && <div style={styles.toast}>{msg}</div>}
 
+
       {cart.length > 0 && (
         <button style={styles.cartBtn} onClick={() => navigate('/orders')}>
           🛒 Ver carrito ({cart.length})
@@ -91,7 +97,7 @@ function CatalogPage() {
 
       <div style={styles.grid}>
         {skills.map((skill) => (
-          <SkillCard key={skill.id} skill={skill} onAdd={handleAdd} owned={ownedIds.has(skill.id)} />
+          <SkillCard key={skill.id} skill={skill} onAdd={handleAdd} ownedXp={ownedIds[skill.id] || 0} />
         ))}
       </div>
     </div>
@@ -112,7 +118,7 @@ const styles = {
   },
   grid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+    gridTemplateColumns: 'repeat(3, 1fr)',
     gap: '1rem',
   },
   card: {
@@ -171,14 +177,27 @@ const styles = {
     fontSize: '14px',
     cursor: 'pointer',
   },
+  ownedBadge: {
+    fontSize: '12px',
+    color: '#6FCF97',
+    background: '#0d2b1f',
+    border: '1px solid #2FA084',
+    borderRadius: '6px',
+    padding: '3px 8px',
+    textAlign: 'center',
+  },
   toast: {
+    position: 'fixed',
+    bottom: '2rem',
+    right: '2rem',
     background: '#1a1a1a',
     border: '1px solid #2FA084',
     color: '#6FCF97',
-    borderRadius: '8px',
-    padding: '10px 14px',
-    marginBottom: '1rem',
-    fontSize: '13px',
+    borderRadius: '10px',
+    padding: '12px 20px',
+    fontSize: '14px',
+    boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+    zIndex: 1000,
   },
 }
 
