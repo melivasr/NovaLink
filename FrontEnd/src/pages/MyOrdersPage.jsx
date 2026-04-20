@@ -79,7 +79,7 @@ function MyOrdersPage() {
 
 const styles = {
   page: {
-    maxWidth: '700px',
+    maxWidth: '1100px',
     margin: '2rem auto',
     padding: '0 1.5rem',
   },
@@ -90,8 +90,8 @@ const styles = {
     marginBottom: '1.5rem',
   },
   list: {
-    display: 'flex',
-    flexDirection: 'column',
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, 1fr)',
     gap: '1rem',
   },
   card: {

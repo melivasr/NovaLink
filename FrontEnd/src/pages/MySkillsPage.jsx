@@ -92,7 +92,7 @@ const styles = {
   },
   grid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+    gridTemplateColumns: 'repeat(3, 1fr)',
     gap: '1rem',
   },
   card: {
