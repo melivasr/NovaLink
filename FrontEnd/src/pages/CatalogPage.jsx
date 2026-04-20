@@ -88,6 +88,7 @@ function CatalogPage() {
 
       {msg && <div style={styles.toast}>{msg}</div>}
 
+
       {cart.length > 0 && (
         <button style={styles.cartBtn} onClick={() => navigate('/orders')}>
           🛒 Ver carrito ({cart.length})
@@ -186,13 +187,17 @@ const styles = {
     textAlign: 'center',
   },
   toast: {
+    position: 'fixed',
+    bottom: '2rem',
+    right: '2rem',
     background: '#1a1a1a',
     border: '1px solid #2FA084',
     color: '#6FCF97',
-    borderRadius: '8px',
-    padding: '10px 14px',
-    marginBottom: '1rem',
-    fontSize: '13px',
+    borderRadius: '10px',
+    padding: '12px 20px',
+    fontSize: '14px',
+    boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+    zIndex: 1000,
   },
 }
 
