@@ -66,7 +66,7 @@ function NotificationsPage() {
         }}>
           <p style={{ color: '#EEEEEE', margin: '0 0 0.5rem' }}>{n.message}</p>
           <p style={{ color: '#888', fontSize: '12px', margin: '0 0 0.75rem' }}>
-            {new Date(n.created_at).toLocaleString()}
+            {new Date(n.createdAt).toLocaleString('es-ES')}
           </p>
           <div style={{ display: 'flex', gap: '8px' }}>
             {!n.read && (
