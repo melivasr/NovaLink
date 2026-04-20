@@ -29,7 +29,7 @@ function LoginPage() {
       localStorage.setItem('userEmail', data.data.email)
       localStorage.setItem('userName', data.data.name)
       localStorage.setItem('isAdmin', data.data.is_admin ? 'true' : 'false')
-      navigate('/catalog')
+      navigate('/home')
     } catch (err) {
       setError(err.message)
     } finally {

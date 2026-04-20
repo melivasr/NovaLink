@@ -8,6 +8,7 @@ import MyOrdersPage from './pages/MyOrdersPage'
 import MySkillsPage from './pages/MySkillsPage'
 import NotificationsPage from './pages/NotificationsPage'
 import AdminPage from './pages/AdminPage'
+import HomePage from './pages/HomePage'
 import logo from './assets/logo.png'
 
 
@@ -28,6 +29,7 @@ function Layout() {
         <Route path="/my-skills" element={<MySkillsPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/admin" element={<AdminPage />} />
+        <Route path="/home" element={<HomePage />} />
       </Routes>
     </>
   )
