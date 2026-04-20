@@ -12,7 +12,7 @@ const pool = new Pool({
 const getAllSkills = async (req, res) => {
   try {
     const results = await pool.query(
-      'SELECT id, name, difficulty, xp_points, stock, is_activated, created_at FROM products ORDER BY created_at ASC'
+      'SELECT id, name, difficulty, xp_points, price, stock, is_activated, created_at FROM products ORDER BY created_at ASC'
     );
 
     res.status(200).json(results.rows);
@@ -28,7 +28,7 @@ const getSkillById = async (req, res) => {
 
   try {
     const results = await pool.query(
-      'SELECT id, name, difficulty, xp_points, stock, is_activated, created_at FROM products WHERE id = $1',
+      'SELECT id, name, difficulty, xp_points, price, stock, is_activated, created_at FROM products WHERE id = $1',
       [id]
     );
 
@@ -45,16 +45,16 @@ const getSkillById = async (req, res) => {
 
 // POST
 const createSkill = async (req, res) => {
-  const { name, difficulty, stock, points } = req.body;
+  const { name, difficulty, stock, points, price } = req.body;
 
-  if (!name || !difficulty || stock === undefined || points === undefined) {
+  if (!name || !difficulty || stock === undefined || points === undefined || price === undefined) {
     return res.status(400).send('Faltan datos');
   }
 
   try {
     const results = await pool.query(
-      'INSERT INTO products (name, difficulty, xp_points, stock, is_activated) VALUES ($1, $2, $3, $4, TRUE) RETURNING *',
-      [name, difficulty, points, stock]
+      'INSERT INTO products (name, difficulty, xp_points, price, stock, is_activated) VALUES ($1, $2, $3, $4, $5, TRUE) RETURNING *',
+      [name, difficulty, points, price, stock]
     );
 
     res.status(201).json(results.rows[0]);

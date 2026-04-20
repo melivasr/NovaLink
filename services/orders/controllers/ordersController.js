@@ -32,7 +32,7 @@ const createOrdersController = (deps) => {
 
     try {
       const orderResult = await pool.query(
-        `SELECT id, user_id, status, created_at
+        `SELECT id, user_id, status, total_amount, created_at
          FROM orders
          WHERE id = $1`,
         [id]
@@ -60,6 +60,7 @@ const createOrdersController = (deps) => {
           id: order.id,
           userId: order.user_id,
           status: order.status,
+          totalAmount: order.total_amount,
           createdAt: order.created_at,
           items: itemsResult.rows
         }
@@ -193,7 +194,8 @@ const createOrdersController = (deps) => {
           quantity: item.quantity,
           skillName: skill.name || `skill-${item.skillId}`,
           newStock: skill.stock - item.quantity,
-          xp_points: skill.xp_points || 0
+          xp_points: skill.xp_points || 0,
+          price: skill.price || 0
         });
       }
 
@@ -210,12 +212,14 @@ const createOrdersController = (deps) => {
         });
       }
 
+      const totalAmount = checkedSkills.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
       const updatedOrderResult = await pool.query(
         `UPDATE orders
-         SET status = $1
-         WHERE id = $2
-         RETURNING id, user_id, status, created_at`,
-        ['Completada', id]
+         SET status = $1, total_amount = $2
+         WHERE id = $3
+         RETURNING id, user_id, status, total_amount, created_at`,
+        ['Completada', totalAmount, id]
       );
 
       await notificationsClient.createNotification({
@@ -297,7 +301,7 @@ const createOrdersController = (deps) => {
 
     try {
       const ordersResult = await pool.query(
-        `SELECT id, user_id, status, created_at
+        `SELECT id, user_id, status, total_amount, created_at
          FROM orders
          WHERE user_id = $1
          ORDER BY created_at ASC`,
@@ -318,6 +322,7 @@ const createOrdersController = (deps) => {
           id: order.id,
           userId: order.user_id,
           status: order.status,
+          totalAmount: order.total_amount,
           createdAt: order.created_at,
           items: itemsResult.rows
         });

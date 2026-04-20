@@ -23,6 +23,9 @@ function SkillCard({ skill, onAdd, ownedXp }) {
       </div>
       <div style={styles.info}>
         <span>⭐ {skill.xp_points} XP/unidad</span>
+        <span>💲{Number(skill.price).toFixed(2)}/unidad</span>
+      </div>
+      <div style={styles.info}>
         <span>📦 Stock: {skill.stock}</span>
       </div>
       {ownedXp > 0 && (
