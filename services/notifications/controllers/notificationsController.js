@@ -14,7 +14,7 @@ const createNotification = async (req, res) => {
   if (!userId || !message) {
     return res.status(400).json({
       success: false,
-      message: 'userId, orderId y message son requeridos'
+      message: 'userId y message son requeridos'
     });
   }
 

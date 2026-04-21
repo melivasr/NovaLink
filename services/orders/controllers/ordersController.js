@@ -176,6 +176,11 @@ const createOrdersController = (deps) => {
 
       await usersClient.getUserById(order.user_id);
 
+      const userSkillsResponse = await usersClient.getUserSkills(order.user_id);
+      const existingSkillIds = new Set(
+        (userSkillsResponse.data?.data || []).map((s) => s.product_id)
+      );
+
       const checkedSkills = [];
 
       for (const item of itemsResult.rows) {
@@ -213,6 +218,8 @@ const createOrdersController = (deps) => {
       }
 
       const totalAmount = checkedSkills.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const hadExistingSkills = checkedSkills.some((item) => existingSkillIds.has(item.skillId));
+      const responseStatus = hadExistingSkills ? 202 : 201;
 
       const updatedOrderResult = await pool.query(
         `UPDATE orders
@@ -230,16 +237,19 @@ const createOrdersController = (deps) => {
 
       const updatedOrder = updatedOrderResult.rows[0];
 
-      res.status(200).json({
+      res.status(responseStatus).json({
         success: true,
         data: {
           id: updatedOrder.id,
           userId: updatedOrder.user_id,
           status: updatedOrder.status,
+          totalAmount: updatedOrder.total_amount,
           createdAt: updatedOrder.created_at,
           items: itemsResult.rows
         },
-        message: 'Pedido completado exitosamente'
+        message: hadExistingSkills
+          ? 'Pedido completado — XP sumado a habilidades existentes'
+          : 'Pedido completado — nuevas habilidades adquiridas'
       });
     } catch (error) {
       const serviceError = getServiceError(error, 'Error interno del servidor');
