@@ -32,7 +32,7 @@ const createOrdersController = (deps) => {
 
     try {
       const orderResult = await pool.query(
-        `SELECT id, user_id, status, created_at
+        `SELECT id, user_id, status, total_amount, created_at
          FROM orders
          WHERE id = $1`,
         [id]
@@ -60,6 +60,7 @@ const createOrdersController = (deps) => {
           id: order.id,
           userId: order.user_id,
           status: order.status,
+          totalAmount: order.total_amount,
           createdAt: order.created_at,
           items: itemsResult.rows
         }
@@ -175,6 +176,11 @@ const createOrdersController = (deps) => {
 
       await usersClient.getUserById(order.user_id);
 
+      const userSkillsResponse = await usersClient.getUserSkills(order.user_id);
+      const existingSkillIds = new Set(
+        (userSkillsResponse.data?.data || []).map((s) => s.product_id)
+      );
+
       const checkedSkills = [];
 
       for (const item of itemsResult.rows) {
@@ -192,7 +198,9 @@ const createOrdersController = (deps) => {
           skillId: item.skillId,
           quantity: item.quantity,
           skillName: skill.name || `skill-${item.skillId}`,
-          newStock: skill.stock - item.quantity
+          newStock: skill.stock - item.quantity,
+          xp_points: skill.xp_points || 0,
+          price: skill.price || 0
         });
       }
 
@@ -204,16 +212,21 @@ const createOrdersController = (deps) => {
 
       for (const item of checkedSkills) {
         await usersClient.addSkillToUser(order.user_id, {
-          skillId: item.skillId
+          skillId: item.skillId,
+          xp: item.quantity * item.xp_points
         });
       }
 
+      const totalAmount = checkedSkills.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const hadExistingSkills = checkedSkills.some((item) => existingSkillIds.has(item.skillId));
+      const responseStatus = hadExistingSkills ? 202 : 201;
+
       const updatedOrderResult = await pool.query(
         `UPDATE orders
-         SET status = $1
-         WHERE id = $2
-         RETURNING id, user_id, status, created_at`,
-        ['Completada', id]
+         SET status = $1, total_amount = $2
+         WHERE id = $3
+         RETURNING id, user_id, status, total_amount, created_at`,
+        ['Completada', totalAmount, id]
       );
 
       await notificationsClient.createNotification({
@@ -224,16 +237,19 @@ const createOrdersController = (deps) => {
 
       const updatedOrder = updatedOrderResult.rows[0];
 
-      res.status(200).json({
+      res.status(responseStatus).json({
         success: true,
         data: {
           id: updatedOrder.id,
           userId: updatedOrder.user_id,
           status: updatedOrder.status,
+          totalAmount: updatedOrder.total_amount,
           createdAt: updatedOrder.created_at,
           items: itemsResult.rows
         },
-        message: 'Pedido completado exitosamente'
+        message: hadExistingSkills
+          ? 'Pedido completado — XP sumado a habilidades existentes'
+          : 'Pedido completado — nuevas habilidades adquiridas'
       });
     } catch (error) {
       const serviceError = getServiceError(error, 'Error interno del servidor');
@@ -295,7 +311,7 @@ const createOrdersController = (deps) => {
 
     try {
       const ordersResult = await pool.query(
-        `SELECT id, user_id, status, created_at
+        `SELECT id, user_id, status, total_amount, created_at
          FROM orders
          WHERE user_id = $1
          ORDER BY created_at ASC`,
@@ -316,6 +332,7 @@ const createOrdersController = (deps) => {
           id: order.id,
           userId: order.user_id,
           status: order.status,
+          totalAmount: order.total_amount,
           createdAt: order.created_at,
           items: itemsResult.rows
         });

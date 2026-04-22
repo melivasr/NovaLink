@@ -1,0 +1,47 @@
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import Navbar from './components/Navbar'
+import LoginPage from './pages/LoginPage'
+import RegisterPage from './pages/RegisterPage'
+import CatalogPage from './pages/CatalogPage'
+import OrdersPage from './pages/OrdersPage'
+import MyOrdersPage from './pages/MyOrdersPage'
+import MySkillsPage from './pages/MySkillsPage'
+import NotificationsPage from './pages/NotificationsPage'
+import AdminPage from './pages/AdminPage'
+import HomePage from './pages/HomePage'
+import logo from './assets/logo.png'
+import ConfigPage from './pages/ConfigPage'
+
+function Layout() {
+  const location = useLocation()
+  const hideNavbar = ['/', '/register'].includes(location.pathname)
+
+  return (
+    <>
+     <img src={logo} alt="Logo" style={{ width: '400px', margin: '1.5rem auto', display: 'block' }} />
+      {!hideNavbar && <Navbar />}
+      <Routes>
+        <Route path="/" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/catalog" element={<CatalogPage />} />
+        <Route path="/orders" element={<OrdersPage />} />
+        <Route path="/my-orders" element={<MyOrdersPage />} />
+        <Route path="/my-skills" element={<MySkillsPage />} />
+        <Route path="/notifications" element={<NotificationsPage />} />
+        <Route path="/admin" element={<AdminPage />} />
+        <Route path="/home" element={<HomePage />} />
+        <Route path="/config" element={<ConfigPage />} />
+      </Routes>
+    </>
+  )
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Layout />
+    </BrowserRouter>
+  )
+}
+
+export default App

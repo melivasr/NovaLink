@@ -11,10 +11,10 @@ const pool = new Pool({
 const createNotification = async (req, res) => {
   const { userId, orderId, message } = req.body;
 
-  if (!userId || !orderId || !message) {
+  if (!userId || !message) {
     return res.status(400).json({
       success: false,
-      message: 'userId, orderId y message son requeridos'
+      message: 'userId y message son requeridos'
     });
   }
 
@@ -23,7 +23,7 @@ const createNotification = async (req, res) => {
       `INSERT INTO notifications (user_id, order_id, message)
        VALUES ($1, $2, $3)
        RETURNING id, user_id, order_id, message, is_read, created_at`,
-      [userId, orderId, message]
+      [userId, orderId || null, message]
     );
 
     console.log(`Notificación enviada a usuario ${userId}: ${message}`);
