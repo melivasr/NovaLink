@@ -91,7 +91,6 @@ Los comandos anteriores ya buscan el pod actual automáticamente por label.
 | Metodo | Endpoint | Descripcion |
 |---|---|---|
 | POST | /api/v1/users | Crear usuario |
-| POST | /api/v1/users/login | Autenticación usuario |
 | GET | /api/v1/users/{id} | Obtener usuario |
 | PUT | /api/v1/users/{id} | Actualizar usuario |
 | DELETE | /api/v1/users/{id} | Eliminar usuario |
@@ -131,7 +130,6 @@ Los comandos anteriores ya buscan el pod actual automáticamente por label.
 ## Códigos de Respuesta
 
 - 200: OK
-- 202: Accepted
 - 201: Created
 - 204: No Content
 - 400: Bad Request
@@ -142,11 +140,10 @@ Los comandos anteriores ya buscan el pod actual automáticamente por label.
 
 ### 1. Crear usuario
 ```json
-POST http://127.0.0.1:3001/api/v1/users
+POST http://localhost:3001/api/v1/users
 {
 	"name": "Juan Pérez",
-	"email": "juan@example.com",
-  	"password": "secreto123"
+	"email": "juan@example.com"
 }
 ```
 
