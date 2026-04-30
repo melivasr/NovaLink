@@ -1,0 +1,1425 @@
+openapi: "3.0.3"
+info:
+  title: Microservices API
+  version: "1.0.0"
+  description: >
+    API microservicios: Users, Inventory, Orders y Notifications.
+    Cada endpoint pertenece a un servidor distinto.
+
+
+    **Seleccionar el server correspondiente al tag antes de ejecutar una request.**
+
+servers:
+  - url: http://127.0.0.1:3001
+    description: Users Service
+  - url: http://127.0.0.1:3002
+    description: Inventory Service
+  - url: http://127.0.0.1:3003
+    description: Orders Service
+  - url: http://127.0.0.1:3004
+    description: Notifications Service
+
+tags:
+  - name: Users
+    description: "Server: http://127.0.0.1:3001 - Gestión de usuarios, autenticación y habilidades adquiridas"
+  - name: Inventory
+    description: "Server: http://127.0.0.1:3002 - Catálogo de habilidades/productos disponibles"
+  - name: Orders
+    description: "Server: http://127.0.0.1:3003 - Gestión de pedidos y proceso de checkout"
+  - name: Notifications
+    description: "Server: http://127.0.0.1:3004 - Notificaciones generadas por el proceso de checkout"
+
+paths:
+
+  # USERS SERVICE - http://127.0.0.1:3001
+
+  /api/v1/users:
+    get:
+      tags: [Users]
+      summary: Listar todos los usuarios
+      description: >
+        Retorna todos los usuarios ordenados por created_at ASC.
+        No expone password_hash.
+      responses:
+        "200":
+          description: Lista de usuarios
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+        "500":
+          $ref: '#/components/responses/InternalError'
+
+    post:
+      tags: [Users]
+      summary: Crear usuario
+      description: >
+        Crea un nuevo usuario. Valida formato de email con regex antes de insertar.
+        El email debe ser único (constraint DB). El id es UUID generado por la DB.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password]
+              properties:
+                name:
+                  type: string
+                  example: "Ana García"
+                email:
+                  type: string
+                  format: email
+                  example: "ana@mail.com"
+                password:
+                  type: string
+                  example: "secreto123"
+      responses:
+        "201":
+          description: Usuario creado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+              example:
+                success: true
+                data:
+                  id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                  name: "Ana García"
+                  email: "ana@mail.com"
+                  created_at: "2024-01-15T10:30:00Z"
+                message: "Usuario creado exitosamente"
+        "400":
+          description: Validación fallida o email duplicado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                camposFaltantes:
+                  summary: Campos requeridos ausentes
+                  value:
+                    success: false
+                    message: "Nombre, email y password son requeridos"
+                emailInvalido:
+                  summary: Formato de email incorrecto
+                  value:
+                    success: false
+                    message: "Email inválido"
+                emailDuplicado:
+                  summary: Email ya registrado
+                  value:
+                    success: false
+                    message: "El email ya existe"
+        "500":
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/users/login:
+    post:
+      tags: [Users]
+      summary: Autenticar usuario
+      description: >
+        Autentica con email y password. Retorna id, name, email e is_admin.
+        La contraseña se compara directamente contra password_hash.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "admin@test.com"
+                password:
+                  type: string
+                  example: "12345"
+      responses:
+        "200":
+          description: Login exitoso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/UserAuth'
+                  message:
+                    type: string
+                    example: "Login exitoso"
+              example:
+                success: true
+                data:
+                  id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                  name: "Admin"
+                  email: "admin@test.com"
+                  is_admin: true
+                message: "Login exitoso"
+        "400":
+          description: Campos requeridos faltantes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Email y password son requeridos"
+        "401":
+          description: Credenciales incorrectas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Email o password incorrectos"
+        "500":
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Error en login"
+
+  /api/v1/users/{id}:
+    get:
+      tags: [Users]
+      summary: Obtener usuario por ID
+      description: >
+        Retorna los datos de un usuario.
+        Nota: el catch del 500 retorna el mismo mensaje que el 404
+        ("Usuario no encontrado").
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        "200":
+          description: Usuario encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+              example:
+                success: true
+                data:
+                  id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                  name: "Ana García"
+                  email: "ana@mail.com"
+                  created_at: "2024-01-15T10:30:00Z"
+        "404":
+          description: Usuario no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Usuario no encontrado"
+        "500":
+          description: Error interno (mismo mensaje que 404)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Usuario no encontrado"
+
+    put:
+      tags: [Users]
+      summary: Actualizar usuario
+      description: >
+        Actualiza datos del usuario. Todos los campos son opcionales;
+        los no enviados conservan su valor actual.
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Ana López"
+                email:
+                  type: string
+                  format: email
+                  example: "ana.lopez@mail.com"
+                password:
+                  type: string
+                  example: "nuevaPassword123"
+      responses:
+        "200":
+          description: Usuario actualizado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+              example:
+                success: true
+                data:
+                  id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                  name: "Ana López"
+                  email: "ana.lopez@mail.com"
+                  created_at: "2024-01-15T10:30:00Z"
+                message: "Usuario actualizado exitosamente"
+        "400":
+          description: Email ya existe
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "El email ya existe"
+        "404":
+          description: Usuario no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Usuario no encontrado"
+        "500":
+          $ref: '#/components/responses/InternalError'
+
+    delete:
+      tags: [Users]
+      summary: Eliminar usuario
+      description: >
+        Elimina el usuario y todas sus habilidades en user_skills.
+        La eliminación de user_skills ocurre antes del DELETE en users.
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        "204":
+          description: Usuario eliminado (sin contenido)
+        "404":
+          description: Usuario no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Usuario no encontrado"
+        "500":
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/users/{id}/skills:
+    get:
+      tags: [Users]
+      summary: Habilidades del usuario
+      description: >
+        Retorna las habilidades adquiridas, ordenadas por acquired_at ASC.
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        "200":
+          description: Lista de habilidades del usuario
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/UserSkill'
+                  message:
+                    type: string
+                    example: "Habilidades del usuario Ana García"
+        "404":
+          description: Usuario no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Usuario no encontrado"
+        "500":
+          $ref: '#/components/responses/InternalError'
+
+    put:
+      tags: [Users]
+      summary: Agregar habilidad al usuario
+      description: >
+        Upsert de una habilidad en user_skills. Si el usuario ya posee la habilidad,
+        acumula el XP enviado al existente.
+        Si xp es 0, negativo o no se envía, se acumula 0.
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [skillId]
+              properties:
+                skillId:
+                  type: string
+                  format: uuid
+                  example: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+                xp:
+                  type: integer
+                  minimum: 0
+                  description: XP a acumular. Si es 0 o negativo se trata como 0.
+                  example: 200
+      responses:
+        "200":
+          description: Habilidad agregada o XP acumulado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSkillsResponse'
+              example:
+                success: true
+                data:
+                  user:
+                    id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                    name: "Ana García"
+                    email: "ana@mail.com"
+                    created_at: "2024-01-15T10:30:00Z"
+                  skills:
+                    - product_id: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+                      xp_accumulated: 200
+                      acquired_at: "2024-01-15T10:30:00Z"
+                message: "Habilidad actualizada exitosamente"
+        "400":
+          description: skillId faltante
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "skillId es requerido"
+        "404":
+          description: Usuario no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Usuario no encontrado"
+        "500":
+          $ref: '#/components/responses/InternalError'
+
+    delete:
+      tags: [Users]
+      summary: Remover habilidad del usuario
+      description: >
+        Elimina una habilidad específica de user_skills.
+        Requiere skillId en el body.
+        La respuesta retorna skills sin xp_accumulated (solo product_id y acquired_at).
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [skillId]
+              properties:
+                skillId:
+                  type: string
+                  format: uuid
+                  example: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+      responses:
+        "200":
+          description: Habilidad removida exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/User'
+                      skills:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/AcquiredSkill'
+                  message:
+                    type: string
+                    example: "Habilidad removida exitosamente"
+        "400":
+          description: skillId faltante
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "skillId es requerido"
+        "404":
+          description: Usuario o habilidad no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                usuarioNoEncontrado:
+                  summary: El usuario no existe
+                  value:
+                    success: false
+                    message: "Usuario no encontrado"
+                habilidadNoEncontrada:
+                  summary: El usuario no posee esa habilidad
+                  value:
+                    success: false
+                    message: "Usuario no posee esta habilidad"
+        "500":
+          $ref: '#/components/responses/InternalError'
+
+
+  # INVENTORY SERVICE - http://127.0.0.1:3002
+
+  /api/v1/inventory:
+    get:
+      tags: [Inventory]
+      summary: Listar todas las habilidades
+      description: >
+        Retorna el catálogo completo ordenado por created_at ASC.
+      responses:
+        "200":
+          description: Lista de habilidades
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Skill'
+              example:
+                - id: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+                  name: "Empatia"
+                  difficulty: "Facil"
+                  xp_points: 3
+                  price: 4.99
+                  stock: 100
+                  is_activated: true
+                  created_at: "2024-01-15T10:30:00Z"
+        "500":
+          description: Error interno del servidor
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: "Error obteniendo habilidades"
+
+    post:
+      tags: [Inventory]
+      summary: Crear habilidad
+      description: >
+        Crea una nueva habilidad. Se activa automáticamente.
+        El nombre debe ser único (constraint DB). El id es UUID generado por la DB.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, difficulty, stock, points, price]
+              properties:
+                name:
+                  type: string
+                  example: "Liderazgo"
+                difficulty:
+                  type: string
+                  enum: [Facil, Medio, Dificil]
+                  example: "Dificil"
+                stock:
+                  type: integer
+                  minimum: 0
+                  example: 50
+                points:
+                  type: integer
+                  description: Puntos XP - se almacena en la columna xp_points
+                  example: 8
+                price:
+                  type: number
+                  format: float
+                  example: 19.99
+      responses:
+        "201":
+          description: Habilidad creada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Skill'
+              example:
+                id: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+                name: "Liderazgo"
+                difficulty: "Dificil"
+                xp_points: 8
+                price: 19.99
+                stock: 50
+                is_activated: true
+                created_at: "2024-01-15T10:30:00Z"
+        "400":
+          description: Datos faltantes o nombre duplicado
+          content:
+            text/plain:
+              schema:
+                type: string
+              examples:
+                faltanDatos:
+                  summary: Campos requeridos ausentes
+                  value: "Faltan datos"
+                duplicado:
+                  summary: Ya existe una habilidad con ese nombre
+                  value: "Nombre duplicado"
+        "500":
+          description: Error interno del servidor
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: "Error creando habilidad"
+
+  /api/v1/inventory/{id}:
+    get:
+      tags: [Inventory]
+      summary: Obtener habilidad por ID
+      description: Errores retornan text/plain, no JSON.
+      parameters:
+        - $ref: '#/components/parameters/SkillId'
+      responses:
+        "200":
+          description: Habilidad encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Skill'
+              example:
+                id: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+                name: "Liderazgo"
+                difficulty: "Dificil"
+                xp_points: 8
+                price: 19.99
+                stock: 50
+                is_activated: true
+                created_at: "2024-01-15T10:30:00Z"
+        "404":
+          description: Habilidad no encontrada
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: "Habilidad no encontrada"
+        "500":
+          description: Error interno del servidor
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: "Error obteniendo la habilidad"
+
+    put:
+      tags: [Inventory]
+      summary: Actualizar habilidad
+      description: >
+        Actualiza una habilidad. Todos los campos son opcionales - los no enviados
+        conservan su valor actual.
+      parameters:
+        - $ref: '#/components/parameters/SkillId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Liderazgo Avanzado"
+                difficulty:
+                  type: string
+                  enum: [Facil, Medio, Dificil]
+                  example: "Dificil"
+                stock:
+                  type: integer
+                  minimum: 0
+                  example: 30
+                points:
+                  type: integer
+                  description: Nuevo valor para xp_points
+                  example: 10
+                is_activated:
+                  type: boolean
+                  example: false
+      responses:
+        "200":
+          description: Habilidad actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Skill'
+              example:
+                id: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+                name: "Liderazgo Avanzado"
+                difficulty: "Dificil"
+                xp_points: 10
+                price: 19.99
+                stock: 30
+                is_activated: false
+                created_at: "2024-01-15T10:30:00Z"
+        "404":
+          description: Habilidad no encontrada
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: "Habilidad no encontrada"
+        "500":
+          description: Error interno del servidor
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: "Error actualizando habilidad"
+
+    delete:
+      tags: [Inventory]
+      summary: Eliminar habilidad
+      description: >
+        Elimina permanentemente una habilidad del catálogo.
+        Retorna 200 con text/plain.
+      parameters:
+        - $ref: '#/components/parameters/SkillId'
+      responses:
+        "200":
+          description: Habilidad eliminada
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: "Habilidad eliminada"
+        "404":
+          description: Habilidad no encontrada
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: "Habilidad no encontrada"
+        "500":
+          description: Error interno del servidor
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: "Error eliminando habilidad"
+
+  # ORDERS SERVICE - http://127.0.0.1:3003
+
+  /api/v1/orders:
+    post:
+      tags: [Orders]
+      summary: Crear pedido
+      description: >
+        Crea un nuevo pedido en estado "Pendiente". No valida stock ni usuario
+        en este paso - eso ocurre durante el checkout.
+        El id del pedido es UUID generado por la DB.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId, items]
+              properties:
+                userId:
+                  type: string
+                  format: uuid
+                  example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                items:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: object
+                    required: [skillId, quantity]
+                    properties:
+                      skillId:
+                        type: string
+                        format: uuid
+                        example: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+                      quantity:
+                        type: integer
+                        minimum: 1
+                        example: 2
+      responses:
+        "201":
+          description: Pedido creado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+              example:
+                success: true
+                data:
+                  id: "c3d4e5f6-a7b8-9012-cdef-123456789012"
+                  userId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                  status: "Pendiente"
+                  createdAt: "2024-01-15T10:30:00Z"
+                  items:
+                    - skillId: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+                      quantity: 2
+                message: "Pedido creado exitosamente"
+        "400":
+          description: Validación fallida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                faltanCampos:
+                  summary: userId o items ausentes
+                  value:
+                    success: false
+                    message: "userId y items son requeridos"
+                itemInvalido:
+                  summary: Item sin skillId o quantity inválido
+                  value:
+                    success: false
+                    message: "Cada item debe tener skillId y quantity mayor a 0"
+        "500":
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/orders/user/{userId}:
+    get:
+      tags: [Orders]
+      summary: Pedidos de un usuario
+      description: >
+        Retorna todos los pedidos de un usuario con sus ítems,
+        ordenados por created_at ASC.
+        IMPORTANTE: esta ruta debe declararse antes de /orders/{id}.
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: UUID del usuario
+          schema:
+            type: string
+            format: uuid
+          example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+      responses:
+        "200":
+          description: Lista de pedidos del usuario
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Order'
+                  message:
+                    type: string
+                    example: "Pedidos del usuario a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        "500":
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/orders/{id}:
+    get:
+      tags: [Orders]
+      summary: Obtener pedido por ID
+      description: Retorna los datos completos de un pedido incluyendo sus ítems.
+      parameters:
+        - $ref: '#/components/parameters/OrderId'
+      responses:
+        "200":
+          description: Pedido encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+              example:
+                success: true
+                data:
+                  id: "c3d4e5f6-a7b8-9012-cdef-123456789012"
+                  userId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                  status: "Pendiente"
+                  totalAmount: null
+                  createdAt: "2024-01-15T10:30:00Z"
+                  items:
+                    - skillId: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+                      quantity: 2
+        "404":
+          description: Pedido no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Pedido no encontrado"
+        "500":
+          $ref: '#/components/responses/InternalError'
+
+    put:
+      tags: [Orders]
+      summary: Checkout - procesar pedido
+      description: >
+        Orquesta el checkout completo en este orden:
+        (1) valida que el usuario existe (Users Service),
+        (2) verifica stock de cada ítem (Inventory Service),
+        (3) descuenta stock (Inventory Service),
+        (4) asigna habilidades + XP al usuario (Users Service),
+        (5) marca el pedido como "Completada" y calcula el total,
+        (6) envía notificación (Notifications Service).
+        El pedido debe estar en estado "Pendiente".
+        El 500 puede propagar el mensaje de error del servicio externo que falló.
+      parameters:
+        - $ref: '#/components/parameters/OrderId'
+      responses:
+        "200":
+          description: Checkout completado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+              example:
+                success: true
+                data:
+                  id: "c3d4e5f6-a7b8-9012-cdef-123456789012"
+                  userId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                  status: "Completada"
+                  createdAt: "2024-01-15T10:30:00Z"
+                  items:
+                    - skillId: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+                      quantity: 2
+                message: "Pedido completado exitosamente"
+        "400":
+          description: El pedido ya fue procesado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "El pedido ya fue procesado"
+        "404":
+          description: Pedido o usuario no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Pedido no encontrado"
+        "409":
+          description: Stock insuficiente para algún ítem
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Stock insuficiente para Liderazgo"
+        "500":
+          description: Error interno o fallo en servicio externo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Error interno del servidor"
+
+    delete:
+      tags: [Orders]
+      summary: Cancelar pedido
+      description: >
+        Elimina el pedido y todos sus cart_items.
+        No revierte stock ni notifica - solo borra el registro.
+      parameters:
+        - $ref: '#/components/parameters/OrderId'
+      responses:
+        "204":
+          description: Pedido cancelado (sin contenido)
+        "404":
+          description: Pedido no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Pedido no encontrado"
+        "500":
+          $ref: '#/components/responses/InternalError'
+
+  # NOTIFICATIONS SERVICE - http://127.0.0.1:3004
+  /api/v1/noti:
+    post:
+      tags: [Notifications]
+      summary: Crear notificación
+      description: >
+        Crea una nueva notificación. Invocado internamente por el Orders Service
+        al completar un checkout. El id es UUID generado por la DB.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId, orderId, message]
+              properties:
+                userId:
+                  type: string
+                  format: uuid
+                  example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                orderId:
+                  type: string
+                  format: uuid
+                  example: "c3d4e5f6-a7b8-9012-cdef-123456789012"
+                message:
+                  type: string
+                  example: "Tu pedido c3d4e5f6-a7b8-9012-cdef-123456789012 ha sido completado exitosamente"
+      responses:
+        "201":
+          description: Notificación creada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationResponse'
+              example:
+                success: true
+                data:
+                  id: "d4e5f6a7-b8c9-0123-defa-234567890123"
+                  userId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                  orderId: "c3d4e5f6-a7b8-9012-cdef-123456789012"
+                  message: "Tu pedido c3d4e5f6-... ha sido completado exitosamente"
+                  read: false
+                  createdAt: "2024-01-15T10:30:00Z"
+                message: "Notificación creada exitosamente"
+        "400":
+          description: Campos requeridos faltantes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "userId, orderId y message son requeridos"
+        "500":
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/noti/user/{userId}:
+    get:
+      tags: [Notifications]
+      summary: Notificaciones de un usuario
+      description: >
+        Retorna todas las notificaciones de un usuario,
+        ordenadas por created_at DESC (más reciente primero).
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: UUID del usuario
+          schema:
+            type: string
+            format: uuid
+          example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+      responses:
+        "200":
+          description: Lista de notificaciones
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Notification'
+                  message:
+                    type: string
+                    example: "Notificaciones del usuario a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        "500":
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/noti/{id}/read:
+    put:
+      tags: [Notifications]
+      summary: Marcar notificación como leída
+      description: Actualiza is_read = TRUE para la notificación indicada.
+      parameters:
+        - $ref: '#/components/parameters/NotificationId'
+      responses:
+        "200":
+          description: Notificación marcada como leída
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationResponse'
+              example:
+                success: true
+                data:
+                  id: "d4e5f6a7-b8c9-0123-defa-234567890123"
+                  userId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                  orderId: "c3d4e5f6-a7b8-9012-cdef-123456789012"
+                  message: "Tu pedido ... ha sido completado exitosamente"
+                  read: true
+                  createdAt: "2024-01-15T10:30:00Z"
+                message: "Notificación marcada como leída"
+        "404":
+          description: Notificación no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Notificación no encontrada"
+        "500":
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/noti/{id}:
+    delete:
+      tags: [Notifications]
+      summary: Eliminar notificación
+      description: Elimina permanentemente una notificación por su ID.
+      parameters:
+        - $ref: '#/components/parameters/NotificationId'
+      responses:
+        "204":
+          description: Eliminada exitosamente (sin contenido)
+        "404":
+          description: Notificación no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Notificación no encontrada"
+        "500":
+          $ref: '#/components/responses/InternalError'
+
+# COMPONENTS
+components:
+
+  schemas:
+
+    # Users 
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        name:
+          type: string
+          example: "Ana García"
+        email:
+          type: string
+          format: email
+          example: "ana@mail.com"
+        created_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+
+    UserAuth:
+      type: object
+      description: >
+        Retornado exclusivamente por POST /login.
+        Incluye is_admin, a diferencia del objeto User estándar.
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        name:
+          type: string
+          example: "Admin"
+        email:
+          type: string
+          format: email
+          example: "admin@test.com"
+        is_admin:
+          type: boolean
+          example: true
+
+    UserResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/User'
+        message:
+          type: string
+
+    UserSkill:
+      type: object
+      description: Retornado por GET /:id/skills y PUT /:id/skills
+      properties:
+        product_id:
+          type: string
+          format: uuid
+          example: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+        xp_accumulated:
+          type: integer
+          example: 200
+        acquired_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+
+    AcquiredSkill:
+      type: object
+      description: >
+        Retornado únicamente por DELETE /:id/skills.
+        El SELECT de ese endpoint no incluye xp_accumulated.
+      properties:
+        product_id:
+          type: string
+          format: uuid
+          example: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+        acquired_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+
+    UserSkillsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            user:
+              $ref: '#/components/schemas/User'
+            skills:
+              type: array
+              items:
+                $ref: '#/components/schemas/UserSkill'
+        message:
+          type: string
+
+    # Inventory
+    Skill:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+        name:
+          type: string
+          example: "Liderazgo"
+        difficulty:
+          type: string
+          enum: [Facil, Medio, Dificil]
+          example: "Dificil"
+        xp_points:
+          type: integer
+          example: 8
+        price:
+          type: number
+          format: float
+          example: 19.99
+        stock:
+          type: integer
+          example: 50
+        is_activated:
+          type: boolean
+          example: true
+        created_at:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+
+    # Orders 
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "c3d4e5f6-a7b8-9012-cdef-123456789012"
+        userId:
+          type: string
+          format: uuid
+          example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        status:
+          type: string
+          enum: [Pendiente, Completada]
+          example: "Pendiente"
+        totalAmount:
+          type: number
+          nullable: true
+          description: Calculado en el checkout. Null si el pedido está Pendiente.
+          example: 39.98
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+
+    OrderItem:
+      type: object
+      properties:
+        skillId:
+          type: string
+          format: uuid
+          example: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+        quantity:
+          type: integer
+          minimum: 1
+          example: 2
+
+    OrderResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/Order'
+        message:
+          type: string
+
+    # Notifications 
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "d4e5f6a7-b8c9-0123-defa-234567890123"
+        userId:
+          type: string
+          format: uuid
+          example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        orderId:
+          type: string
+          format: uuid
+          example: "c3d4e5f6-a7b8-9012-cdef-123456789012"
+        message:
+          type: string
+          example: "Tu pedido c3d4e5f6-... ha sido completado exitosamente"
+        read:
+          type: boolean
+          example: false
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+
+    NotificationResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/Notification'
+        message:
+          type: string
+
+    #Shared
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "Descripción del error"
+
+  parameters:
+
+    UserId:
+      name: id
+      in: path
+      required: true
+      description: UUID del usuario
+      schema:
+        type: string
+        format: uuid
+      example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+
+    SkillId:
+      name: id
+      in: path
+      required: true
+      description: UUID de la habilidad
+      schema:
+        type: string
+        format: uuid
+      example: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
+
+    OrderId:
+      name: id
+      in: path
+      required: true
+      description: UUID del pedido
+      schema:
+        type: string
+        format: uuid
+      example: "c3d4e5f6-a7b8-9012-cdef-123456789012"
+
+    NotificationId:
+      name: id
+      in: path
+      required: true
+      description: UUID de la notificación
+      schema:
+        type: string
+        format: uuid
+      example: "d4e5f6a7-b8c9-0123-defa-234567890123"
+
+  responses:
+
+    InternalError:
+      description: Error interno del servidor
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: "Error interno del servidor"
