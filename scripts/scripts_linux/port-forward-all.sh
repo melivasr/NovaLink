@@ -8,6 +8,7 @@ SERVICES=(
   "products-service:3002:3002"
   "orders-service:3003:3003"
   "notifications-service:3004:3004"
+  "auth-service:3005:3005"
 )
 
 for ENTRY in "${SERVICES[@]}"; do
@@ -26,5 +27,6 @@ echo "  http://127.0.0.1:3001/health"
 echo "  http://127.0.0.1:3002/health"
 echo "  http://127.0.0.1:3003/health"
 echo "  http://127.0.0.1:3004/health"
+echo "  http://127.0.0.1:3005/health"
 echo ""
 echo "Para detenerlos corre: kill \$(lsof -ti:3001,3002,3003,3004)"

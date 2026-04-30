@@ -1,4 +1,5 @@
 const { Pool } = require('pg');
+const bcryptjs = require('bcryptjs');
 
 const pool = new Pool({
   user: process.env.DB_USER || 'postgres',
@@ -66,13 +67,13 @@ const createUser = async (req, res) => {
       message: 'Email inválido'
     });
   }
-
+  const passwordHash = await bcryptjs.hash(password, 10);
   try {
     const results = await pool.query(
       `INSERT INTO users (name, email, password_hash)
        VALUES ($1, $2, $3)
        RETURNING id, name, email, created_at`,
-      [name, email, password]
+      [name, email, passwordHash]
     );
 
     res.status(201).json({
