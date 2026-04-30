@@ -74,13 +74,14 @@ const createOrdersController = (deps) => {
     }
   };
 
-  const createOrder = async (req, res) => {
-    const { userId, items } = req.body;
+const createOrder = async (req, res) => {
+    const userId = req.user.user_id;
+    const { items } = req.body;
 
-    if (!userId || !items || !Array.isArray(items) || items.length === 0) {
+    if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'userId y items son requeridos'
+        message: 'items es requerido'
       });
     }
 
@@ -116,18 +117,31 @@ const createOrdersController = (deps) => {
       }
 
       await client.query('COMMIT');
-
-      res.status(201).json({
-        success: true,
+      const orderEvent = {
+        event: 'pedido.creado',
         data: {
-          id: order.id,
-          userId: order.user_id,
+          orderId: order.id,
+          user_id: userId,
+          issued_by: 'auth-service',
           status: order.status,
           createdAt: order.created_at,
           items: items
         },
-        message: 'Pedido creado exitosamente'
-      });
+        timestamp: new Date().toISOString()
+      };
+
+      console.log('Evento publicado:', JSON.stringify(orderEvent, null, 2));
+      res.status(201).json({
+      success: true,
+      data: {
+        id: order.id,
+        userId: order.user_id,
+        status: order.status,
+        createdAt: order.created_at,
+        items: items
+      },
+      message: 'Pedido creado exitosamente'
+    });
     } catch (error) {
       await client.query('ROLLBACK');
       console.error(error);

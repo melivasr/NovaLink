@@ -46,7 +46,17 @@ Exec-Sql -Pod $ordersDbPod -Database 'orders_db' -Sql "CREATE TABLE IF NOT EXIST
 Exec-Sql -Pod $ordersDbPod -Database 'orders_db' -Sql "ALTER TABLE notifications ALTER COLUMN order_id DROP NOT NULL;"
 
 Write-Host 'Seeding users_db...'
-Exec-Sql -Pod $usersDbPod -Database 'users_db' -Sql "INSERT INTO users (name, email, password_hash, is_admin) VALUES ('Admin', 'admin@test.com', '12345', TRUE) ON CONFLICT (email) DO NOTHING;"
+Exec-Sql -Pod $usersDbPod -Database 'users_db' -Sql "INSERT INTO users (name, email, password_hash, is_admin)
+VALUES (
+'Admin',
+'admin@test.com',
+concat(chr(36), '2a', chr(36), '10', chr(36), 'MWyejpK4FMcDJpXU80uCM.bdS7ARGT3OdscRmH4qdXcNzRsdl/xda'),
+TRUE
+)
+ON CONFLICT (email)
+DO UPDATE SET
+password_hash = EXCLUDED.password_hash,
+is_admin = EXCLUDED.is_admin;"
 
 Write-Host 'Seeding products_db...'
 Exec-Sql -Pod $productsDbPod -Database 'products_db' -Sql "INSERT INTO products (name, difficulty, xp_points, price, stock) VALUES ('Empatia', 'Facil', 3, 4.99, 100), ('Amistad', 'Facil', 2, 3.99, 100), ('Escucha Activa', 'Facil', 3, 4.99, 100), ('Respeto', 'Facil', 2, 3.99, 100), ('Humor', 'Facil', 1, 2.99, 100), ('Comunicacion Asertiva', 'Medio', 5, 9.99, 80), ('Colaboracion', 'Medio', 5, 9.99, 80), ('Paciencia', 'Medio', 6, 11.99, 80), ('Confianza', 'Medio', 5, 9.99, 80), ('Adaptabilidad', 'Medio', 6, 11.99, 80), ('Liderazgo', 'Dificil', 8, 19.99, 50), ('Resiliencia', 'Dificil', 9, 22.99, 50), ('Sagacidad', 'Dificil', 8, 19.99, 50), ('Creatividad', 'Dificil', 7, 17.99, 50), ('Iniciativa', 'Dificil', 7, 17.99, 50) ON CONFLICT (name) DO UPDATE SET price = EXCLUDED.price, xp_points = EXCLUDED.xp_points, stock = EXCLUDED.stock;"

@@ -40,6 +40,7 @@ build_and_load() {
 }
 
 build_and_load "users-service"         "services/users"         "novalink/users-service:$IMAGE_TAG"
+build_and_load "auth-service" "services/auth" "novalink/auth-service:$IMAGE_TAG"
 build_and_load "products-service"      "services/products"      "novalink/products-service:$IMAGE_TAG"
 build_and_load "orders-service"        "services/orders"        "novalink/orders-service:$IMAGE_TAG"
 build_and_load "notifications-service" "services/notifications" "novalink/notifications-service:$IMAGE_TAG"
@@ -62,6 +63,7 @@ bash "$(dirname "$0")/init-k8s-db.sh"
 # --- Actualizar imágenes en deployments ---
 echo "Updating deployments to the new image tags..."
 kubectl set image deployment/users-service         users="novalink/users-service:$IMAGE_TAG"
+kubectl set image deployment/auth-service         auth="novalink/auth-service:$IMAGE_TAG"
 kubectl set image deployment/products-service      products="novalink/products-service:$IMAGE_TAG"
 kubectl set image deployment/orders-service        orders="novalink/orders-service:$IMAGE_TAG"
 kubectl set image deployment/notifications-service notifications="novalink/notifications-service:$IMAGE_TAG"
@@ -69,6 +71,7 @@ kubectl set image deployment/notifications-service notifications="novalink/notif
 # --- Esperar rollout ---
 echo "Waiting for rollout..."
 kubectl rollout status deployment/users-service --timeout=240s
+kubectl rollout status deployment/auth-service --timeout=240s
 kubectl rollout status deployment/products-service --timeout=240s
 kubectl rollout status deployment/orders-service --timeout=240s
 kubectl rollout status deployment/notifications-service --timeout=240s

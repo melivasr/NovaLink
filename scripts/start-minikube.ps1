@@ -57,6 +57,7 @@ $imageTag = 'dev-{0}' -f (Get-Date -Format 'yyyyMMddHHmmss')
 
 $services = @(
     @{ Name = 'users-service'; Container = 'users'; Path = 'services/users'; Tag = "novalink/users-service:$imageTag" },
+    @{ Name = 'auth-service'; Container = 'auth'; Path = 'services/auth'; Tag = "novalink/auth-service:$imageTag" }
     @{ Name = 'products-service'; Container = 'products'; Path = 'services/products'; Tag = "novalink/products-service:$imageTag" },
     @{ Name = 'orders-service'; Container = 'orders'; Path = 'services/orders'; Tag = "novalink/orders-service:$imageTag" },
     @{ Name = 'notifications-service'; Container = 'notifications'; Path = 'services/notifications'; Tag = "novalink/notifications-service:$imageTag" }
@@ -98,6 +99,8 @@ kubectl rollout status deployment/users-service --timeout=240s
 Assert-LastExit 'users-service rollout'
 kubectl rollout status deployment/products-service --timeout=240s
 Assert-LastExit 'products-service rollout'
+kubectl rollout status deployment/auth-service --timeout=240s
+Assert-LastExit 'auth-service rollout'
 kubectl rollout status deployment/orders-service --timeout=240s
 Assert-LastExit 'orders-service rollout'
 kubectl rollout status deployment/notifications-service --timeout=240s

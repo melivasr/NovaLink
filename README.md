@@ -49,7 +49,7 @@ npm start
 ```
 
 ```bash
-cd services/orders
+cd services/auth
 npm install
 npm start
 ```

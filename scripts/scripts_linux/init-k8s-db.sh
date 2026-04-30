@@ -46,7 +46,17 @@ exec_sql "$ORDERS_DB_POD" "orders_db" "CREATE TABLE IF NOT EXISTS cart_items (or
 exec_sql "$ORDERS_DB_POD" "orders_db" "CREATE TABLE IF NOT EXISTS notifications (id UUID PRIMARY KEY DEFAULT (md5(random()::text || clock_timestamp()::text))::uuid, user_id UUID NOT NULL, order_id UUID NOT NULL REFERENCES orders(id), message TEXT NOT NULL, is_read BOOLEAN NOT NULL DEFAULT FALSE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"
 
 echo "Seeding users_db..."
-exec_sql "$USERS_DB_POD" "users_db" "INSERT INTO users (name, email, password_hash, is_admin) VALUES ('Admin', 'admin@test.com', '12345', TRUE) ON CONFLICT (email) DO NOTHING;"
+exec_sql "$USERS_DB_POD" "users_db" "INSERT INTO users (name, email, password_hash, is_admin)
+VALUES (
+'Admin',
+'admin@test.com',
+'\$2a\$10\$MWyejpK4FMcDJpXU80uCM.bdS7ARGT3OdscRmH4qdXcNzRsdl/xda',
+TRUE
+)
+ON CONFLICT (email)
+DO UPDATE SET
+password_hash = EXCLUDED.password_hash,
+is_admin = EXCLUDED.is_admin;"
 
 echo "Seeding products_db..."
 exec_sql "$PRODUCTS_DB_POD" "products_db" "INSERT INTO products (name, difficulty, xp_points, price, stock) VALUES ('Empatia', 'Facil', 3, 4.99, 100), ('Amistad', 'Facil', 2, 3.99, 100), ('Escucha Activa', 'Facil', 3, 4.99, 100), ('Respeto', 'Facil', 2, 3.99, 100), ('Humor', 'Facil', 1, 2.99, 100), ('Comunicacion Asertiva', 'Medio', 5, 9.99, 80), ('Colaboracion', 'Medio', 5, 9.99, 80), ('Paciencia', 'Medio', 6, 11.99, 80), ('Confianza', 'Medio', 5, 9.99, 80), ('Adaptabilidad', 'Medio', 6, 11.99, 80), ('Liderazgo', 'Dificil', 8, 19.99, 50), ('Resiliencia', 'Dificil', 9, 22.99, 50), ('Sagacidad', 'Dificil', 8, 19.99, 50), ('Creatividad', 'Dificil', 7, 17.99, 50), ('Iniciativa', 'Dificil', 7, 17.99, 50) ON CONFLICT (name) DO UPDATE SET price = EXCLUDED.price, xp_points = EXCLUDED.xp_points, stock = EXCLUDED.stock;"
