@@ -1,0 +1,67 @@
+name: Deploy Auth Service
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'services/auth/**'
+      - '.github/workflows/deploy-auth.yml'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: services/auth/package-lock.json
+
+      - name: Install dependencies
+        working-directory: services/auth
+        run: npm install
+
+      - name: Lint code
+        working-directory: services/auth
+        run: npm run lint --if-present
+
+      - name: Build Docker image
+        working-directory: services/auth
+        run: |
+          docker build -t novalink/auth-service:${{ github.sha }} .
+          docker tag novalink/auth-service:${{ github.sha }} novalink/auth-service:latest
+
+      - name: Push Docker image (if registry configured)
+        working-directory: services/auth
+        run: |
+          # Si está configurado un Docker Registry, descomentar:
+          # docker push novalink/auth-service:${{ github.sha }}
+          # docker push novalink/auth-service:latest
+          echo "Docker image built successfully"
+
+      - name: Update Kubernetes manifest
+        run: |
+          sed -i "s|novalink/auth-service:latest|novalink/auth-service:${{ github.sha }}|g" k8s/deployments/auth.yaml
+
+      - name: Commit and push manifest changes
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+          git add k8s/deployments/auth.yaml
+          git commit -m "Update auth-service image to ${{ github.sha }}" --allow-empty
+          git push
+
+      - name: Deploy to Kubernetes (if cluster configured)
+        run: |
+          # Si está configurado kubectl:
+          # kubectl apply -f k8s/deployments/auth.yaml
+          echo "Kubernetes deployment ready"
