@@ -8,7 +8,12 @@ function AdminPage() {
   const [msg, setMsg] = useState('')
   const navigate = useNavigate()
 
-  const isAdmin = localStorage.getItem('isAdmin') === 'true'
+  //const isAdmin = localStorage.getItem('isAdmin') === 'true'
+
+  // Debe estar así para que dependa del tokeen
+  const token = localStorage.getItem('token')
+  const payload = token ? JSON.parse(atob(token.split('.')[1])) : null
+  const isAdmin = payload?.is_admin === true
 
   useEffect(() => {
     if (!isAdmin) {

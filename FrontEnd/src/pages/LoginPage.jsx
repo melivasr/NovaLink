@@ -18,17 +18,16 @@ function LoginPage() {
     setLoading(true)
   
     try {
-      const response = await fetch('/api/users/login', {
+      const response = await fetch('/api/v1/auth/login', { 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       })
+  
       const data = await response.json()
       if (!response.ok) throw new Error(data.message)
-      localStorage.setItem('userId', data.data.id)
-      localStorage.setItem('userEmail', data.data.email)
-      localStorage.setItem('userName', data.data.name)
-      localStorage.setItem('isAdmin', data.data.is_admin ? 'true' : 'false')
+      localStorage.setItem('token', data.data.token)
+  
       navigate('/home')
     } catch (err) {
       setError(err.message)
