@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
         - name: auth
-          image: novalink/auth-service:latest
+          image: novalink/auth-service:8e1bdef4a61826cf2508a686197b99b91eb00b3c
           # En Minikube se usa la imagen local; no se descarga de registry
           imagePullPolicy: Never
           ports:
