@@ -7,7 +7,7 @@ $services = @(
     @{ Name = 'users-service'; LocalPort = 3001; RemotePort = 3001 },
     @{ Name = 'products-service'; LocalPort = 3002; RemotePort = 3002 },
     @{ Name = 'orders-service'; LocalPort = 3003; RemotePort = 3003 },
-    @{ Name = 'notifications-service'; LocalPort = 3004; RemotePort = 3004 }
+    @{ Name = 'notifications-service'; LocalPort = 3004; RemotePort = 3004 },
     @{ Name = 'auth-service'; LocalPort = 3005; RemotePort = 3005 }
 )
 
