@@ -14,7 +14,13 @@ const getAllSkills = async (req, res) => {
     const results = await pool.query(
       'SELECT id, name, difficulty, xp_points, price, stock, is_activated, created_at FROM products ORDER BY created_at ASC'
     );
-
+    console.log('Skills obtenidas:', JSON.stringify({
+      event: 'skills.obtenidas',
+      data: {
+        total: results.rows.length
+      },
+      timestamp: new Date().toISOString()
+      }, null, 2));
     res.status(200).json(results.rows);
   } catch (error) {
     console.error(error);
