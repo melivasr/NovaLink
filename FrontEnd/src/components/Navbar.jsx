@@ -1,7 +1,10 @@
 import { Link } from 'react-router-dom'
 
 function Navbar() {
-  const isAdmin = localStorage.getItem('isAdmin') === 'true'
+  //const isAdmin = localStorage.getItem('isAdmin') === 'true'
+  const token = localStorage.getItem('token')
+  const payload = token ? JSON.parse(atob(token.split('.')[1])) : null
+  const isAdmin = payload?.is_admin === true
 
   return (
     <nav style={styles.nav}>

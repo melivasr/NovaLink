@@ -50,7 +50,10 @@ function CatalogPage() {
   const [msg, setMsg] = useState('')
   const { cart, addToCart } = useCart()
   const navigate = useNavigate()
-  const userId = localStorage.getItem('userId')
+  //const userId = localStorage.getItem('userId')
+  const token = localStorage.getItem('token')
+  const payload = token ? JSON.parse(atob(token.split('.')[1])) : null
+  const userId = payload?.user_id
 
   useEffect(() => {
     const fetchData = [getSkills()]

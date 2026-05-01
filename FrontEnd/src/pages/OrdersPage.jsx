@@ -10,7 +10,10 @@ function OrdersPage() {
   const [success, setSuccess] = useState('')
   const navigate = useNavigate()
 
-  const userId = localStorage.getItem('userId')
+  //const userId = localStorage.getItem('userId')
+  const token = localStorage.getItem('token')
+  const payload = token ? JSON.parse(atob(token.split('.')[1])) : null
+  const userId = payload?.user_id
 
   async function handleCheckout() {
     if (cart.length === 0) return

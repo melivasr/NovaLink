@@ -10,9 +10,16 @@ function HomePage() {
   const [error, setError] = useState('')
   const navigate = useNavigate()
 
-  const userId    = localStorage.getItem('userId')
-  const userName  = localStorage.getItem('userName')
-  const userEmail = localStorage.getItem('userEmail')
+  //const userId    = localStorage.getItem('userId')
+  //const userName  = localStorage.getItem('userName')
+  //const userEmail = localStorage.getItem('userEmail')
+  
+  // Reemplaza las 3 líneas de localStorage por esto
+  const token = localStorage.getItem('token')
+  const payload = token ? JSON.parse(atob(token.split('.')[1])) : null
+  const userId    = payload?.user_id
+  const userName  = payload?.username
+  const userEmail = payload?.email
 
   useEffect(() => {
     if (!userId) { navigate('/'); return }
