@@ -26,10 +26,10 @@ function RegisterPage() {
       })
 
       if (!response.ok) throw new Error('Error al registrar usuario')
-        const data = await response.json()
-        localStorage.setItem('userId', data.data.id)
-        localStorage.setItem('userEmail', data.data.email)
-        localStorage.setItem('userName', data.data.name)
+        //const data = await response.json()
+        //localStorage.setItem('userId', data.data.id)
+        //localStorage.setItem('userEmail', data.data.email)
+        //localStorage.setItem('userName', data.data.name)
         setSuccess('Usuario registrado correctamente')
         setTimeout(() => navigate('/'), 1500)
     } catch (err) {

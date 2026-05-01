@@ -3,15 +3,22 @@ import '../styles/forms.css'
 
 const TABS = ['Nombre', 'Correo', 'Contraseña']
 
-function ConfigPage() {
-  const userId = localStorage.getItem('userId')
-  const [activeTab, setActiveTab] = useState('Nombre')
+/*
+si el usuario cambia su nombre o email, el token seguirá mostrando los datos viejos hasta que vuelva a hacer login
+y se genere uno nuevo. Para actualizar  al instante habría que regenerar el token desde el backend al hacer el PUT
+*/
 
-  const [name, setName] = useState(localStorage.getItem('userName') || '')
-  const [email, setEmail] = useState(localStorage.getItem('userEmail') || '')
+function ConfigPage() {
+  //Leer desde el token
+  const token = localStorage.getItem('token')
+  const payload = token ? JSON.parse(atob(token.split('.')[1])) : null
+  const userId = payload?.user_id
+
+  const [activeTab, setActiveTab] = useState('Nombre')
+  const [name, setName] = useState(payload?.username || '')
+  const [email, setEmail] = useState(payload?.email || '')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -31,8 +38,8 @@ function ConfigPage() {
 
     try {
       const body = {
-        name: localStorage.getItem('userName'),
-        email: localStorage.getItem('userEmail'),
+        name: payload?.username,
+        email: payload?.email,
       }
 
       if (activeTab === 'Nombre') body.name = name
@@ -41,16 +48,17 @@ function ConfigPage() {
 
       const response = await fetch(`/api/users/${userId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` // 👈
+        },
         body: JSON.stringify(body)
       })
 
       const data = await response.json()
       if (!response.ok) throw new Error(data.message)
 
-      localStorage.setItem('userName', data.data.name)
-      localStorage.setItem('userEmail', data.data.email)
-
+      // 👇 Ya no guardamos en localStorage, el token se actualiza en el próximo login
       setPassword('')
       setConfirmPassword('')
       setSuccess('Actualizado correctamente')
