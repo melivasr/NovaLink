@@ -14,7 +14,10 @@ function MyOrdersPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  const userId = localStorage.getItem('userId')
+  //const userId = localStorage.getItem('userId')
+  const token = localStorage.getItem('token')
+  const payload = token ? JSON.parse(atob(token.split('.')[1])) : null
+  const userId = payload?.user_id
 
   useEffect(() => {
     if (!userId) {
