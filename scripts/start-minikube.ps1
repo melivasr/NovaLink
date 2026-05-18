@@ -22,10 +22,18 @@ function Ensure-Docker {
         Start-Process $dockerDesktop
     }
 
-    docker info | Out-Null
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Docker is not running. Open Docker Desktop, wait for "Engine running", then run the script again.'
+    $maxAttempts = 24
+    for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+        Start-Sleep -Seconds 5
+        docker info | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            return
+        }
+
+        Write-Host "Waiting for Docker engine... attempt $attempt of $maxAttempts"
     }
+
+    throw 'Docker is not running. Open Docker Desktop, wait for "Engine running", then run the script again.'
 }
 
 function Ensure-Minikube {
@@ -45,11 +53,14 @@ function Ensure-Minikube {
 Ensure-Docker
 Ensure-Minikube
 
+$imageTag = 'dev-{0}' -f (Get-Date -Format 'yyyyMMddHHmmss')
+
 $services = @(
-    @{ Name = 'users-service'; Path = 'services/users'; Tag = 'novalink/users-service:v3' },
-    @{ Name = 'products-service'; Path = 'services/products'; Tag = 'novalink/products-service:v3' },
-    @{ Name = 'orders-service'; Path = 'services/orders'; Tag = 'novalink/orders-service:v3' },
-    @{ Name = 'notifications-service'; Path = 'services/notifications'; Tag = 'novalink/notifications-service:v3' }
+    @{ Name = 'users-service'; Container = 'users'; Path = 'services/users'; Tag = "novalink/users-service:$imageTag" },
+    @{ Name = 'auth-service'; Container = 'auth'; Path = 'services/auth'; Tag = "novalink/auth-service:$imageTag" },
+    @{ Name = 'products-service'; Container = 'products'; Path = 'services/products'; Tag = "novalink/products-service:$imageTag" },
+    @{ Name = 'orders-service'; Container = 'orders'; Path = 'services/orders'; Tag = "novalink/orders-service:$imageTag" },
+    @{ Name = 'notifications-service'; Container = 'notifications'; Path = 'services/notifications'; Tag = "novalink/notifications-service:$imageTag" }
 )
 
 Write-Host 'Building service images...'
@@ -73,25 +84,25 @@ kubectl rollout status deployment/products-db --timeout=240s
 Assert-LastExit 'products-db rollout'
 kubectl rollout status deployment/orders-db --timeout=240s
 Assert-LastExit 'orders-db rollout'
+kubectl rollout status deployment/notifications-db --timeout=240s
+Assert-LastExit 'notifications-db rollout'
 
 Write-Host 'Initializing database schemas...'
 & (Join-Path $PSScriptRoot 'init-k8s-db.ps1')
 
 Write-Host 'Updating deployments to the new image tags...'
-kubectl set image deployment/users-service users=novalink/users-service:v3
-Assert-LastExit 'set image users-service'
-kubectl set image deployment/products-service products=novalink/products-service:v3
-Assert-LastExit 'set image products-service'
-kubectl set image deployment/orders-service orders=novalink/orders-service:v3
-Assert-LastExit 'set image orders-service'
-kubectl set image deployment/notifications-service notifications=novalink/notifications-service:v3
-Assert-LastExit 'set image notifications-service'
+foreach ($service in $services) {
+    kubectl set image "deployment/$($service.Name)" "$($service.Container)=$($service.Tag)"
+    Assert-LastExit "set image $($service.Name)"
+}
 
 Write-Host 'Waiting for rollout...'
 kubectl rollout status deployment/users-service --timeout=240s
 Assert-LastExit 'users-service rollout'
 kubectl rollout status deployment/products-service --timeout=240s
 Assert-LastExit 'products-service rollout'
+kubectl rollout status deployment/auth-service --timeout=240s
+Assert-LastExit 'auth-service rollout'
 kubectl rollout status deployment/orders-service --timeout=240s
 Assert-LastExit 'orders-service rollout'
 kubectl rollout status deployment/notifications-service --timeout=240s

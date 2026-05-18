@@ -1,8 +1,77 @@
 # ═══════════════════════════════════════════════════════════
 #  Notifications Service — Deployment + Service
-#  (Sin base de datos propia; simula envío por logs)
 # ═══════════════════════════════════════════════════════════
 
+# ─── Base de datos PostgreSQL para Notificaciones ─────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notifications-db
+  labels:
+    app: novalink
+    component: notifications-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: notifications-db
+  template:
+    metadata:
+      labels:
+        app: novalink
+        component: notifications-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: novalink-secrets
+                  key: NOTIFICATIONS_DB_NAME
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: novalink-secrets
+                  key: DB_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: novalink-secrets
+                  key: DB_PASSWORD
+          volumeMounts:
+            - name: notifications-db-storage
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "novalink_user", "-d", "notifications-db"]
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      volumes:
+        - name: notifications-db-storage
+          emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notifications-db
+  labels:
+    app: novalink
+    component: notifications-db
+spec:
+  selector:
+    component: notifications-db
+  ports:
+    - port: 5432
+      targetPort: 5432
+  type: ClusterIP
+
+---
+# ─── Servicio de Notificaciones ───────────────────────────
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -36,7 +105,7 @@ spec:
                   name: novalink-config
                   key: NODE_ENV
             - name: DB_HOST
-              value: "orders-db"
+              value: "notifications-db"
             - name: DB_PORT
               valueFrom:
                 configMapKeyRef:
@@ -46,7 +115,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: novalink-secrets
-                  key: ORDERS_DB_NAME
+                  key: NOTIFICATIONS_DB_NAME
             - name: DB_USER
               valueFrom:
                 secretKeyRef:
@@ -57,6 +126,8 @@ spec:
                 secretKeyRef:
                   name: novalink-secrets
                   key: DB_PASSWORD
+            - name: RABBITMQ_URL
+              value: "amqp://novalink:novalink_pass@rabbitmq:5672"
           readinessProbe:
             httpGet:
               path: /health

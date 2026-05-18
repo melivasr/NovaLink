@@ -1,0 +1,68 @@
+name: Deploy Notifications Service
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'services/notifications/**'
+      - '.github/workflows/deploy-notifications.yml'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: services/notifications/package-lock.json
+
+      - name: Install dependencies
+        working-directory: services/notifications
+        run: npm install
+
+      - name: Run tests
+        working-directory: services/notifications
+        run: npm test --if-present
+
+      - name: Lint code
+        working-directory: services/notifications
+        run: npm run lint --if-present
+
+      - name: Build Docker image
+        working-directory: services/notifications
+        run: |
+          docker build -t novalink/notifications-service:${{ github.sha }} .
+          docker tag novalink/notifications-service:${{ github.sha }} novalink/notifications-service:latest
+
+      - name: Push Docker image (if registry configured)
+        run: |
+          # docker push novalink/notifications-service:${{ github.sha }}
+          # docker push novalink/notifications-service:latest
+          echo "Docker image built successfully"
+
+      - name: Update Kubernetes manifest
+        run: |
+          sed -i "s|novalink/notifications-service:latest|novalink/notifications-service:${{ github.sha }}|g" k8s/deployments/notifications.yaml
+
+      - name: Commit and push manifest changes
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+          git add k8s/deployments/notifications.yaml
+          git commit -m "Update notifications-service image to ${{ github.sha }}" --allow-empty
+          git push
+
+      - name: Deploy to Kubernetes (if cluster configured)
+        run: |
+          # kubectl apply -f k8s/deployments/notifications.yaml
+          echo "Kubernetes deployment ready"

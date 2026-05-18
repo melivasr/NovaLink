@@ -1,0 +1,33 @@
+@startuml
+title NovaLink - Diagrama de componentes
+
+left to right direction
+skinparam componentStyle uml2
+skinparam shadowing false
+
+component "NovaLink Frontend\n(App.jsx, pages, services, context)" as Frontend
+component "users-service\n(routes + controllers)" as UsersSvc
+component "products-service\n(routes + controllers)" as ProductsSvc
+component "orders-service\n(routes + controllers + clients)" as OrdersSvc
+component "notifications-service\n(routes + controllers)" as NotiSvc
+
+interface "Users API" as UsersAPI
+interface "Products API" as ProductsAPI
+interface "Orders API" as OrdersAPI
+interface "Notifications API" as NotiAPI
+
+Frontend ..> UsersAPI : fetch /api/users
+Frontend ..> ProductsAPI : fetch /api/products
+Frontend ..> OrdersAPI : fetch /api/orders
+Frontend ..> NotiAPI : fetch /api/notifications
+
+UsersSvc - UsersAPI
+ProductsSvc - ProductsAPI
+OrdersSvc - OrdersAPI
+NotiSvc - NotiAPI
+
+OrdersSvc ..> UsersAPI : valida usuario
+OrdersSvc ..> ProductsAPI : consulta inventario
+OrdersSvc ..> NotiAPI : notifica resultados
+
+@enduml
