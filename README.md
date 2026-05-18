@@ -2,7 +2,7 @@
 
 ## Arquitectura
 
-5 servicios independientes que se comunican vía HTTP:
+5 microservicios independientes desacoplados:
 
 - **Auth Service** (puerto 3005): Autenticación centralizada con JWT
 - **Users Service** (puerto 3001): Gestión de usuarios y habilidades adquiridas
@@ -21,14 +21,14 @@ Para levantar todo el sistema en Minikube con un solo comando desde PowerShell:
 .\scripts\start-minikube.ps1
 ```
 
-Para levantar el sistema y abrir automáticamente los 4 port-forwards locales (para probar desde navegador):
+Para levantar el sistema y abrir automáticamente los 5 port-forwards locales (para probar desde navegador):
 
 ```powershell
 .\scripts\start-all.ps1
 ```
 
 Ese script:
-- construye las 4 imágenes
+- construye las 5 imágenes
 - las carga en Minikube
 - aplica todos los manifiestos de `k8s/`
 - espera el rollout de los deployments
@@ -56,6 +56,12 @@ npm start
 ```
 
 ```bash
+cd services/orders
+npm install
+npm start
+```
+
+```bash
 cd services/notifications
 npm install
 npm start
@@ -69,6 +75,7 @@ Para conectarte a cada base de datos PostgreSQL dentro del cluster:
 kubectl exec -it $(kubectl get pod -l component=users-db -o jsonpath='{.items[0].metadata.name}') -- psql -U novalink_user -d users_db
 kubectl exec -it $(kubectl get pod -l component=products-db -o jsonpath='{.items[0].metadata.name}') -- psql -U novalink_user -d products_db
 kubectl exec -it $(kubectl get pod -l component=orders-db -o jsonpath='{.items[0].metadata.name}') -- psql -U novalink_user -d orders_db
+kubectl exec -it $(kubectl get pod -l component=notifications-db -o jsonpath='{.items[0].metadata.name}') -- psql -U novalink_user -d notifications-db
 ```
 
 Comandos útiles dentro de `psql`:
@@ -91,14 +98,14 @@ Los comandos anteriores ya buscan el pod actual automáticamente por label.
 
 | Metodo | Endpoint | Descripcion |
 |---|---|---|
+| GET | /api/v1/users | Listar usuarios |
 | POST | /api/v1/users | Crear usuario |
-| POST | /api/v1/users/login | Autenticación usuario |
 | GET | /api/v1/users/{id} | Obtener usuario |
 | PUT | /api/v1/users/{id} | Actualizar usuario |
 | DELETE | /api/v1/users/{id} | Eliminar usuario |
-| GET | /api/v1/users/{id}/skill | Listar habilidades |
-| PUT | /api/v1/users/{id}/skill | Agregar habilidad |
-| DELETE | /api/v1/users/{id}/skill | Quitar habilidad |
+| GET | /api/v1/users/{id}/skills | Listar habilidades |
+| PUT | /api/v1/users/{id}/skills | Agregar habilidad |
+| DELETE | /api/v1/users/{id}/skills | Quitar habilidad |
 
 ### Inventory Service (3002)
 
@@ -134,7 +141,7 @@ Los comandos anteriores ya buscan el pod actual automáticamente por label.
 | Metodo | Endpoint | Descripcion |
 |---|---|---|
 | POST | /api/v1/auth/login | Obtener JWT token |
-| GET | /api/v1/auth/verify | Verificar token (requiere Bearer) |
+| POST | /api/v1/auth/verify | Verificar token (requiere Bearer) |
 
 ## Códigos de Respuesta
 
@@ -146,7 +153,6 @@ Los comandos anteriores ya buscan el pod actual automáticamente por label.
 - 401: Unauthorized (Token inválido o faltante)
 - 403: Forbidden (Token expirado)
 - 404: Not Found
-- 409: Conflict (stock insuficiente)
 
 ## Autenticación con JWT
 
@@ -168,12 +174,11 @@ Respuesta exitosa:
 {
   "success": true,
   "data": {
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "user": {
-      "id": "550e8400-e29b-41d4-a716-446655440000",
-      "email": "juan@example.com",
-      "name": "Juan Pérez"
-    }
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "Juan Pérez",
+    "email": "juan@example.com",
+    "is_admin": false,
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
   },
   "message": "Login exitoso"
 }
@@ -195,7 +200,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 3. **Verificar token** (endpoint de diagnóstico):
 ```json
-GET http://127.0.0.1:3005/api/v1/auth/verify
+POST http://127.0.0.1:3005/api/v1/auth/verify
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
