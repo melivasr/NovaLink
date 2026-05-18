@@ -10,6 +10,8 @@ info:
     **Seleccionar el server correspondiente al tag antes de ejecutar una request.**
 
 servers:
+  - url: http://127.0.0.1:3005
+    description: Auth Service
   - url: http://127.0.0.1:3001
     description: Users Service
   - url: http://127.0.0.1:3002
@@ -20,6 +22,8 @@ servers:
     description: Notifications Service
 
 tags:
+  - name: Auth
+    description: "Server: http://127.0.0.1:3005 - Autenticación centralizada con JWT"
   - name: Users
     description: "Server: http://127.0.0.1:3001 - Gestión de usuarios, autenticación y habilidades adquiridas"
   - name: Inventory
@@ -30,6 +34,147 @@ tags:
     description: "Server: http://127.0.0.1:3004 - Notificaciones generadas por el proceso de checkout"
 
 paths:
+
+  # AUTH SERVICE - http://127.0.0.1:3005
+
+  /api/v1/auth/login:
+    post:
+      tags: [Auth]
+      summary: Obtener JWT token
+      description: >
+        Autentica con email y password. Retorna el token JWT junto con los datos
+        básicos del usuario. El token expira en 24h y debe enviarse como
+        `Authorization: Bearer <token>` en endpoints protegidos.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "ana@mail.com"
+                password:
+                  type: string
+                  example: "secreto123"
+      responses:
+        "200":
+          description: Login exitoso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                        example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                      name:
+                        type: string
+                        example: "Ana García"
+                      email:
+                        type: string
+                        format: email
+                        example: "ana@mail.com"
+                      is_admin:
+                        type: boolean
+                        example: false
+                      token:
+                        type: string
+                        example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  message:
+                    type: string
+                    example: "Login exitoso"
+        "400":
+          description: Campos requeridos faltantes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Email y password requeridos"
+        "401":
+          description: Credenciales incorrectas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Email o password incorrectos"
+        "500":
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/auth/verify:
+    post:
+      tags: [Auth]
+      summary: Verificar JWT token
+      description: >
+        Verifica y decodifica el token JWT enviado en el header `Authorization: Bearer <token>`.
+        Retorna el payload completo del token (user_id, username, email, is_admin, issued_by).
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Token válido
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      user_id:
+                        type: string
+                        format: uuid
+                        example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+                      username:
+                        type: string
+                        example: "Ana García"
+                      email:
+                        type: string
+                        format: email
+                        example: "ana@mail.com"
+                      is_admin:
+                        type: boolean
+                        example: false
+                      issued_by:
+                        type: string
+                        example: "auth-service"
+                  message:
+                    type: string
+                    example: "Token válido"
+        "401":
+          description: Token ausente, inválido o expirado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                sinToken:
+                  summary: Header Authorization ausente
+                  value:
+                    success: false
+                    message: "Token no proporcionado"
+                invalido:
+                  summary: Token inválido o expirado
+                  value:
+                    success: false
+                    message: "Token inválido o expirado"
 
   # USERS SERVICE - http://127.0.0.1:3001
 
@@ -121,80 +266,6 @@ paths:
                     message: "El email ya existe"
         "500":
           $ref: '#/components/responses/InternalError'
-
-  /api/v1/users/login:
-    post:
-      tags: [Users]
-      summary: Autenticar usuario
-      description: >
-        Autentica con email y password. Retorna id, name, email e is_admin.
-        La contraseña se compara directamente contra password_hash.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [email, password]
-              properties:
-                email:
-                  type: string
-                  format: email
-                  example: "admin@test.com"
-                password:
-                  type: string
-                  example: "12345"
-      responses:
-        "200":
-          description: Login exitoso
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    $ref: '#/components/schemas/UserAuth'
-                  message:
-                    type: string
-                    example: "Login exitoso"
-              example:
-                success: true
-                data:
-                  id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
-                  name: "Admin"
-                  email: "admin@test.com"
-                  is_admin: true
-                message: "Login exitoso"
-        "400":
-          description: Campos requeridos faltantes
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                success: false
-                message: "Email y password son requeridos"
-        "401":
-          description: Credenciales incorrectas
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                success: false
-                message: "Email o password incorrectos"
-        "500":
-          description: Error interno del servidor
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                success: false
-                message: "Error en login"
 
   /api/v1/users/{id}:
     get:
@@ -529,12 +600,7 @@ paths:
                   is_activated: true
                   created_at: "2024-01-15T10:30:00Z"
         "500":
-          description: Error interno del servidor
-          content:
-            text/plain:
-              schema:
-                type: string
-              example: "Error obteniendo habilidades"
+          $ref: '#/components/responses/InternalError'
 
     post:
       tags: [Inventory]
@@ -588,29 +654,27 @@ paths:
         "400":
           description: Datos faltantes o nombre duplicado
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
+                $ref: '#/components/schemas/ErrorResponse'
               examples:
                 faltanDatos:
                   summary: Campos requeridos ausentes
-                  value: "Faltan datos"
+                  value:
+                    success: false
+                    message: "Faltan datos"
                 duplicado:
                   summary: Ya existe una habilidad con ese nombre
-                  value: "Nombre duplicado"
+                  value:
+                    success: false
+                    message: "Nombre duplicado"
         "500":
-          description: Error interno del servidor
-          content:
-            text/plain:
-              schema:
-                type: string
-              example: "Error creando habilidad"
+          $ref: '#/components/responses/InternalError'
 
   /api/v1/inventory/{id}:
     get:
       tags: [Inventory]
       summary: Obtener habilidad por ID
-      description: Errores retornan text/plain, no JSON.
       parameters:
         - $ref: '#/components/parameters/SkillId'
       responses:
@@ -632,17 +696,14 @@ paths:
         "404":
           description: Habilidad no encontrada
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
-              example: "Habilidad no encontrada"
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Habilidad no encontrada"
         "500":
-          description: Error interno del servidor
-          content:
-            text/plain:
-              schema:
-                type: string
-              example: "Error obteniendo la habilidad"
+          $ref: '#/components/responses/InternalError'
 
     put:
       tags: [Inventory]
@@ -696,48 +757,42 @@ paths:
         "404":
           description: Habilidad no encontrada
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
-              example: "Habilidad no encontrada"
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Habilidad no encontrada"
         "500":
-          description: Error interno del servidor
-          content:
-            text/plain:
-              schema:
-                type: string
-              example: "Error actualizando habilidad"
+          $ref: '#/components/responses/InternalError'
 
     delete:
       tags: [Inventory]
       summary: Eliminar habilidad
-      description: >
-        Elimina permanentemente una habilidad del catálogo.
-        Retorna 200 con text/plain.
+      description: Elimina permanentemente una habilidad del catálogo.
       parameters:
         - $ref: '#/components/parameters/SkillId'
       responses:
         "200":
           description: Habilidad eliminada
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
-              example: "Habilidad eliminada"
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: true
+                message: "Habilidad eliminada"
         "404":
           description: Habilidad no encontrada
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
-              example: "Habilidad no encontrada"
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: "Habilidad no encontrada"
         "500":
-          description: Error interno del servidor
-          content:
-            text/plain:
-              schema:
-                type: string
-              example: "Error eliminando habilidad"
+          $ref: '#/components/responses/InternalError'
 
   # ORDERS SERVICE - http://127.0.0.1:3003
 
@@ -755,12 +810,8 @@ paths:
           application/json:
             schema:
               type: object
-              required: [userId, items]
+              required: [items]
               properties:
-                userId:
-                  type: string
-                  format: uuid
-                  example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
                 items:
                   type: array
                   minItems: 1
@@ -802,10 +853,10 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
               examples:
                 faltanCampos:
-                  summary: userId o items ausentes
+                  summary: items ausentes o vacíos
                   value:
                     success: false
-                    message: "userId y items son requeridos"
+                    message: "items es requerido"
                 itemInvalido:
                   summary: Item sin skillId o quantity inválido
                   value:
@@ -893,20 +944,16 @@ paths:
       tags: [Orders]
       summary: Checkout - procesar pedido
       description: >
-        Orquesta el checkout completo en este orden:
-        (1) valida que el usuario existe (Users Service),
-        (2) verifica stock de cada ítem (Inventory Service),
-        (3) descuenta stock (Inventory Service),
-        (4) asigna habilidades + XP al usuario (Users Service),
-        (5) marca el pedido como "Completada" y calcula el total,
-        (6) envía notificación (Notifications Service).
+        Inicia el procesamiento asíncrono del pedido vía eventos (EDA).
+        Cambia el estado a "Procesando" y publica el evento `pedido.creado` en RabbitMQ.
+        La validación de stock, descuento, asignación de XP y notificación ocurren
+        de forma asíncrona en los demás servicios (Inventory → Users → Notifications).
         El pedido debe estar en estado "Pendiente".
-        El 500 puede propagar el mensaje de error del servicio externo que falló.
       parameters:
         - $ref: '#/components/parameters/OrderId'
       responses:
-        "200":
-          description: Checkout completado exitosamente
+        "202":
+          description: Pedido aceptado para procesamiento asíncrono
           content:
             application/json:
               schema:
@@ -915,13 +962,8 @@ paths:
                 success: true
                 data:
                   id: "c3d4e5f6-a7b8-9012-cdef-123456789012"
-                  userId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
-                  status: "Completada"
-                  createdAt: "2024-01-15T10:30:00Z"
-                  items:
-                    - skillId: "b2c3d4e5-f6a7-8901-bcde-f12345678901"
-                      quantity: 2
-                message: "Pedido completado exitosamente"
+                  status: "Procesando"
+                message: "Pedido en procesamiento asíncrono"
         "400":
           description: El pedido ya fue procesado
           content:
@@ -932,7 +974,7 @@ paths:
                 success: false
                 message: "El pedido ya fue procesado"
         "404":
-          description: Pedido o usuario no encontrado
+          description: Pedido no encontrado
           content:
             application/json:
               schema:
@@ -940,24 +982,8 @@ paths:
               example:
                 success: false
                 message: "Pedido no encontrado"
-        "409":
-          description: Stock insuficiente para algún ítem
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                success: false
-                message: "Stock insuficiente para Liderazgo"
         "500":
-          description: Error interno o fallo en servicio externo
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                success: false
-                message: "Error interno del servidor"
+          $ref: '#/components/responses/InternalError'
 
     delete:
       tags: [Orders]
@@ -988,15 +1014,15 @@ paths:
       tags: [Notifications]
       summary: Crear notificación
       description: >
-        Crea una nueva notificación. Invocado internamente por el Orders Service
-        al completar un checkout. El id es UUID generado por la DB.
+        Crea una nueva notificación. Normalmente invocado vía el evento `usuario.actualizado`
+        de RabbitMQ. El id es UUID generado por la DB.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [userId, orderId, message]
+              required: [userId, message]
               properties:
                 userId:
                   type: string
@@ -1005,6 +1031,8 @@ paths:
                 orderId:
                   type: string
                   format: uuid
+                  nullable: true
+                  description: Opcional. UUID del pedido asociado.
                   example: "c3d4e5f6-a7b8-9012-cdef-123456789012"
                 message:
                   type: string
@@ -1034,7 +1062,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
                 success: false
-                message: "userId, orderId y message son requeridos"
+                message: "userId y message son requeridos"
         "500":
           $ref: '#/components/responses/InternalError'
 
@@ -1284,7 +1312,7 @@ components:
           example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
         status:
           type: string
-          enum: [Pendiente, Completada]
+          enum: [Pendiente, Procesando, Completada, Cancelada]
           example: "Pendiente"
         totalAmount:
           type: number
@@ -1411,6 +1439,12 @@ components:
         type: string
         format: uuid
       example: "d4e5f6a7-b8c9-0123-defa-234567890123"
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
 
   responses:
 

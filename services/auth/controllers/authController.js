@@ -49,18 +49,18 @@ const verify = async (req, res) => {
                 message: 'Token no proporcionado'
             });
         }
-        
+
+        const token = authHeader.substring(7);
+        const decoded = authService.verify(token);
+
         console.log('Token verificado:', JSON.stringify({
             event: 'token.verificado',
             data: {
-                userId: decoded.id,
+                userId: decoded.user_id,
                 email: decoded.email
             },
             timestamp: new Date().toISOString()
         }, null, 2));
-
-        const token = authHeader.substring(7);
-        const decoded = authService.verify(token);
 
         res.status(200).json({
             success: true,

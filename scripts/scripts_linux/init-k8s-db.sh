@@ -27,6 +27,7 @@ get_pod_by_component() {
 USERS_DB_POD=$(get_pod_by_component "users-db")
 PRODUCTS_DB_POD=$(get_pod_by_component "products-db")
 ORDERS_DB_POD=$(get_pod_by_component "orders-db")
+NOTIFICATIONS_DB_POD=$(get_pod_by_component "notifications-db")
 
 echo "Initializing users_db schema..."
 exec_sql "$USERS_DB_POD" "users_db" "CREATE TABLE IF NOT EXISTS users (id UUID PRIMARY KEY DEFAULT (md5(random()::text || clock_timestamp()::text))::uuid, name VARCHAR(100) NOT NULL, email VARCHAR(150) NOT NULL UNIQUE, password_hash VARCHAR(255) NOT NULL, is_admin BOOLEAN NOT NULL DEFAULT FALSE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"
@@ -43,7 +44,9 @@ echo "Initializing orders_db schema..."
 exec_sql "$ORDERS_DB_POD" "orders_db" "CREATE TABLE IF NOT EXISTS orders (id UUID PRIMARY KEY DEFAULT (md5(random()::text || clock_timestamp()::text))::uuid, user_id UUID NOT NULL, status VARCHAR(20) NOT NULL DEFAULT 'Pendiente', total_amount NUMERIC(10,2) NOT NULL DEFAULT 0, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"
 exec_sql "$ORDERS_DB_POD" "orders_db" "ALTER TABLE orders ADD COLUMN IF NOT EXISTS total_amount NUMERIC(10,2) NOT NULL DEFAULT 0;"
 exec_sql "$ORDERS_DB_POD" "orders_db" "CREATE TABLE IF NOT EXISTS cart_items (order_id UUID NOT NULL REFERENCES orders(id), product_id UUID NOT NULL, quantity INT NOT NULL DEFAULT 1 CHECK (quantity > 0), PRIMARY KEY (order_id, product_id));"
-exec_sql "$ORDERS_DB_POD" "orders_db" "CREATE TABLE IF NOT EXISTS notifications (id UUID PRIMARY KEY DEFAULT (md5(random()::text || clock_timestamp()::text))::uuid, user_id UUID NOT NULL, order_id UUID NOT NULL REFERENCES orders(id), message TEXT NOT NULL, is_read BOOLEAN NOT NULL DEFAULT FALSE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"
+
+echo "Initializing notifications-db schema..."
+exec_sql "$NOTIFICATIONS_DB_POD" "notifications-db" "CREATE TABLE IF NOT EXISTS notifications (id UUID PRIMARY KEY DEFAULT (md5(random()::text || clock_timestamp()::text))::uuid, user_id UUID NOT NULL, order_id UUID, message TEXT NOT NULL, is_read BOOLEAN NOT NULL DEFAULT FALSE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"
 
 echo "Seeding users_db..."
 exec_sql "$USERS_DB_POD" "users_db" "INSERT INTO users (name, email, password_hash, is_admin)

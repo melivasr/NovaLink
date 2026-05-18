@@ -55,6 +55,7 @@ echo "Waiting for database deployments..."
 kubectl rollout status deployment/users-db --timeout=240s
 kubectl rollout status deployment/products-db --timeout=240s
 kubectl rollout status deployment/orders-db --timeout=240s
+kubectl rollout status deployment/notifications-db --timeout=240s
 
 # --- Inicializar esquemas ---
 echo "Initializing database schemas..."

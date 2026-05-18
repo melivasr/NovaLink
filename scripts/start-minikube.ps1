@@ -84,6 +84,8 @@ kubectl rollout status deployment/products-db --timeout=240s
 Assert-LastExit 'products-db rollout'
 kubectl rollout status deployment/orders-db --timeout=240s
 Assert-LastExit 'orders-db rollout'
+kubectl rollout status deployment/notifications-db --timeout=240s
+Assert-LastExit 'notifications-db rollout'
 
 Write-Host 'Initializing database schemas...'
 & (Join-Path $PSScriptRoot 'init-k8s-db.ps1')
