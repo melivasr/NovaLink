@@ -10,7 +10,7 @@ on:
       - '.github/workflows/deploy-users.yml'
 
 concurrency:
-  group: deploy-manifest-${{ github.ref }}
+  group: deploy-users-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:

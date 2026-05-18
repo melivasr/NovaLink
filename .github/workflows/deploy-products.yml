@@ -10,7 +10,7 @@ on:
       - '.github/workflows/deploy-products.yml'
 
 concurrency:
-  group: deploy-manifest-${{ github.ref }}
+  group: deploy-products-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:

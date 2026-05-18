@@ -10,7 +10,7 @@ on:
       - '.github/workflows/deploy-auth.yml'
 
 concurrency:
-  group: deploy-manifest-${{ github.ref }}
+  group: deploy-auth-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:

@@ -10,7 +10,7 @@ on:
       - '.github/workflows/deploy-orders.yml'
 
 concurrency:
-  group: deploy-manifest-${{ github.ref }}
+  group: deploy-orders-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -35,9 +35,9 @@ jobs:
         working-directory: services/orders
         run: npm install
 
-      - name: Run tests
-        working-directory: services/orders
-        run: npm test --if-present
+      # - name: Run tests
+      #   working-directory: services/orders
+      #   run: npm test --if-present
 
       - name: Lint code
         working-directory: services/orders

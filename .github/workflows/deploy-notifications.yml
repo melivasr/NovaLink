@@ -10,7 +10,7 @@ on:
       - '.github/workflows/deploy-notifications.yml'
 
 concurrency:
-  group: deploy-manifest-${{ github.ref }}
+  group: deploy-notifications-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
