@@ -93,7 +93,7 @@ spec:
     spec:
       containers:
         - name: orders
-          image: novalink/orders-service:latest
+          image: novalink/orders-service:6f4fba9f7a9787ffd9f16f2786af729452ae5f82
           imagePullPolicy: Never
           ports:
             - containerPort: 3003
