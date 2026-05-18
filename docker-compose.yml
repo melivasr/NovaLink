@@ -2,21 +2,42 @@ version: "3.9"
 
 # ═══════════════════════════════════════════════════════════
 #  NovaLink — Docker Compose (Desarrollo Local)
-#  Levanta los 4 servicios + sus bases de datos PostgreSQL
+#  Arquitectura EDA: servicios desacoplados via RabbitMQ
 # ═══════════════════════════════════════════════════════════
 
 networks:
   novalink-network:
     driver: bridge
 
-# ─── Volúmenes persistentes para cada DB ────────────────────
 volumes:
   users-db-data:
   products-db-data:
   orders-db-data:
+  notifications-db-data:
+  rabbitmq-data:
 
-# ─── Servicios ──────────────────────────────────────────────
 services:
+
+  # ── Message Broker: RabbitMQ ───────────────────────────────
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: novalink-rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"    # AMQP
+      - "15672:15672"  # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: novalink
+      RABBITMQ_DEFAULT_PASS: novalink_pass
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - novalink-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   # ── Base de datos: Usuarios ────────────────────────────────
   users-db:
@@ -54,8 +75,11 @@ services:
       DB_NAME: users_db
       DB_USER: novalink_user
       DB_PASSWORD: novalink_pass
+      RABBITMQ_URL: amqp://novalink:novalink_pass@rabbitmq:5672
     depends_on:
       users-db:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     networks:
       - novalink-network
@@ -96,8 +120,11 @@ services:
       DB_NAME: products_db
       DB_USER: novalink_user
       DB_PASSWORD: novalink_pass
+      RABBITMQ_URL: amqp://novalink:novalink_pass@rabbitmq:5672
     depends_on:
       products-db:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     networks:
       - novalink-network
@@ -122,6 +149,7 @@ services:
       retries: 5
 
   # ── Servicio: Pedidos (puerto 3003) ────────────────────────
+  # Sin dependencias HTTP a otros servicios — comunica solo via RabbitMQ
   orders-service:
     build:
       context: ./services/orders
@@ -138,22 +166,35 @@ services:
       DB_NAME: orders_db
       DB_USER: novalink_user
       DB_PASSWORD: novalink_pass
-      # URLs internas para comunicación entre servicios
-      USERS_SERVICE_URL: http://users-service:3001
-      PRODUCTS_SERVICE_URL: http://products-service:3002
-      NOTIFICATIONS_SERVICE_URL: http://notifications-service:3004
+      RABBITMQ_URL: amqp://novalink:novalink_pass@rabbitmq:5672
     depends_on:
       orders-db:
         condition: service_healthy
-      users-service:
-        condition: service_started
-      products-service:
-        condition: service_started
+      rabbitmq:
+        condition: service_healthy
     networks:
       - novalink-network
 
+  # ── Base de datos: Notificaciones ─────────────────────────
+  notifications-db:
+    image: postgres:16-alpine
+    container_name: novalink-notifications-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: notifications-db
+      POSTGRES_USER: novalink_user
+      POSTGRES_PASSWORD: novalink_pass
+    volumes:
+      - notifications-db-data:/var/lib/postgresql/data
+    networks:
+      - novalink-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U novalink_user -d notifications-db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # ── Servicio: Notificaciones (puerto 3004) ─────────────────
-  # Las notificaciones no necesitan DB propia; simulan logs/consola
   notifications-service:
     build:
       context: ./services/notifications
@@ -165,5 +206,16 @@ services:
     environment:
       PORT: 3004
       NODE_ENV: development
+      DB_HOST: notifications-db
+      DB_PORT: 5432
+      DB_NAME: notifications_db
+      DB_USER: novalink_user
+      DB_PASSWORD: novalink_pass
+      RABBITMQ_URL: amqp://novalink:novalink_pass@rabbitmq:5672
+    depends_on:
+      notifications-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     networks:
       - novalink-network
