@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - develop
     paths:
       - 'services/orders/**'
       - '.github/workflows/deploy-orders.yml'
