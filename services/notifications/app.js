@@ -10,23 +10,15 @@ const notificationsRoutes = require('./routes/notifications');
 app.use('/api/v1/noti', notificationsRoutes);
 
 app.get('/health', (req, res) => {
-  res.status(200).json({
-    service: 'Notifications Service',
-    status: 'running',
-    port: port
-  });
+  res.status(200).json({ service: 'Notifications Service', status: 'running', port });
 });
 
 app.get('/', (req, res) => {
-  res.json({
-    message: 'Servicio de Notificaciones',
-    endpoints: {
-      notifications: '/api/v1/noti',
-      health: '/health'
-    }
-  });
+  res.json({ message: 'Servicio de Notificaciones', endpoints: { notifications: '/api/v1/noti', health: '/health' } });
 });
 
-app.listen(port, () => {
+app.listen(port, async () => {
   console.log(`Servicio de Notificaciones corriendo en puerto ${port}`);
+  const { startSubscribers } = require('./events/notificationSubscriber');
+  await startSubscribers();
 });
