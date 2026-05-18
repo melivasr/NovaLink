@@ -9,6 +9,10 @@ on:
       - 'services/auth/**'
       - '.github/workflows/deploy-auth.yml'
 
+concurrency:
+  group: deploy-manifest-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -59,6 +63,7 @@ jobs:
           git config --global user.name "GitHub Actions"
           git add k8s/deployments/auth.yaml
           git commit -m "Update auth-service image to ${{ github.sha }}" --allow-empty
+          git pull --rebase origin ${{ github.ref_name }}
           git push
 
       - name: Deploy to Kubernetes (if cluster configured)
