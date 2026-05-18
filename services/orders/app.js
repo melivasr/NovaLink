@@ -19,6 +19,6 @@ app.get('/', (req, res) => {
 
 app.listen(port, async () => {
   console.log(`Servicio de Pedidos corriendo en puerto ${port}`);
-  const { startSubscribers } = require('./events/orderSubscriber');
-  await startSubscribers();
+  // const { startSubscribers } = require('./events/orderSubscriber');
+  // await startSubscribers();
 });

@@ -29,7 +29,7 @@ class UserService {
   }
 
   async updateUser(id, { name, email, password }) {
-    const current = await this.repo.findById(id);
+    const current = await this.repo.findByIdFull(id);
     if (!current) throw { status: 404, message: 'Usuario no encontrado' };
 
     const updatedName = name !== undefined ? name : current.name;

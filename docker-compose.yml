@@ -14,30 +14,30 @@ volumes:
   products-db-data:
   orders-db-data:
   notifications-db-data:
-  rabbitmq-data:
+  # rabbitmq-data:
 
 services:
 
   # ── Message Broker: RabbitMQ ───────────────────────────────
-  rabbitmq:
-    image: rabbitmq:3.13-management-alpine
-    container_name: novalink-rabbitmq
-    restart: unless-stopped
-    ports:
-      - "5672:5672"    # AMQP
-      - "15672:15672"  # Management UI
-    environment:
-      RABBITMQ_DEFAULT_USER: novalink
-      RABBITMQ_DEFAULT_PASS: novalink_pass
-    volumes:
-      - rabbitmq-data:/var/lib/rabbitmq
-    networks:
-      - novalink-network
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
+  # rabbitmq:
+  #   image: rabbitmq:3.13-management-alpine
+  #   container_name: novalink-rabbitmq
+  #   restart: unless-stopped
+  #   ports:
+  #     - "5672:5672"    # AMQP
+  #     - "15672:15672"  # Management UI
+  #   environment:
+  #     RABBITMQ_DEFAULT_USER: novalink
+  #     RABBITMQ_DEFAULT_PASS: novalink_pass
+  #   volumes:
+  #     - rabbitmq-data:/var/lib/rabbitmq
+  #   networks:
+  #     - novalink-network
+  #   healthcheck:
+  #     test: ["CMD", "rabbitmq-diagnostics", "ping"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 10
 
   # ── Base de datos: Usuarios ────────────────────────────────
   users-db:
@@ -75,11 +75,35 @@ services:
       DB_NAME: users_db
       DB_USER: novalink_user
       DB_PASSWORD: novalink_pass
-      RABBITMQ_URL: amqp://novalink:novalink_pass@rabbitmq:5672
+      # RABBITMQ_URL: amqp://novalink:novalink_pass@rabbitmq:5672
     depends_on:
       users-db:
         condition: service_healthy
-      rabbitmq:
+      # rabbitmq:
+      #   condition: service_healthy
+    networks:
+      - novalink-network
+
+  # ── Servicio: Autenticación (puerto 3005) ─────────────────
+  auth-service:
+    build:
+      context: ./services/auth
+      target: production
+    container_name: novalink-auth
+    restart: unless-stopped
+    ports:
+      - "3005:3005"
+    environment:
+      PORT: 3005
+      NODE_ENV: development
+      DB_HOST: users-db
+      DB_PORT: 5432
+      DB_NAME: users_db
+      DB_USER: novalink_user
+      DB_PASSWORD: novalink_pass
+      JWT_SECRET_KEY: novalink-secret
+    depends_on:
+      users-db:
         condition: service_healthy
     networks:
       - novalink-network
@@ -120,12 +144,12 @@ services:
       DB_NAME: products_db
       DB_USER: novalink_user
       DB_PASSWORD: novalink_pass
-      RABBITMQ_URL: amqp://novalink:novalink_pass@rabbitmq:5672
+      # RABBITMQ_URL: amqp://novalink:novalink_pass@rabbitmq:5672
     depends_on:
       products-db:
         condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+      # rabbitmq:
+      #   condition: service_healthy
     networks:
       - novalink-network
 
@@ -166,12 +190,12 @@ services:
       DB_NAME: orders_db
       DB_USER: novalink_user
       DB_PASSWORD: novalink_pass
-      RABBITMQ_URL: amqp://novalink:novalink_pass@rabbitmq:5672
+      # RABBITMQ_URL: amqp://novalink:novalink_pass@rabbitmq:5672
     depends_on:
       orders-db:
         condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+      # rabbitmq:
+      #   condition: service_healthy
     networks:
       - novalink-network
 
@@ -208,14 +232,14 @@ services:
       NODE_ENV: development
       DB_HOST: notifications-db
       DB_PORT: 5432
-      DB_NAME: notifications_db
+      DB_NAME: notifications-db
       DB_USER: novalink_user
       DB_PASSWORD: novalink_pass
-      RABBITMQ_URL: amqp://novalink:novalink_pass@rabbitmq:5672
+      # RABBITMQ_URL: amqp://novalink:novalink_pass@rabbitmq:5672
     depends_on:
       notifications-db:
         condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+      # rabbitmq:
+      #   condition: service_healthy
     networks:
       - novalink-network
