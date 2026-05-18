@@ -93,7 +93,7 @@ spec:
     spec:
       containers:
         - name: users
-          image: novalink/users-service:latest
+          image: novalink/users-service:2317a4cca10e5fe715c291cddb20ff7c75cf9512
           # En Minikube se usa la imagen local; no se descarga de registry
           imagePullPolicy: Never
           ports:
