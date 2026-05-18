@@ -92,7 +92,7 @@ spec:
     spec:
       containers:
         - name: notifications
-          image: novalink/notifications-service:latest
+          image: novalink/notifications-service:fa7a82cde47b60d509e5197ea21f2bfe7958b4b2
           imagePullPolicy: Never
           ports:
             - containerPort: 3004
