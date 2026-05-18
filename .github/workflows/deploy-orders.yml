@@ -65,8 +65,11 @@ jobs:
           git config --global user.name "GitHub Actions"
           git add k8s/deployments/orders.yaml
           git commit -m "Update orders-service image to ${{ github.sha }}" --allow-empty
-          git pull --rebase origin ${{ github.ref_name }}
-          git push
+          for i in 1 2 3 4 5; do
+            git pull --rebase origin ${{ github.ref_name }} && git push && break
+            echo "Push failed, reintentando ($i/5)..."
+            sleep 5
+          done
 
       - name: Deploy to Kubernetes (if cluster configured)
         run: |
