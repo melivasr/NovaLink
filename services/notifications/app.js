@@ -19,6 +19,11 @@ app.get('/', (req, res) => {
 
 app.listen(port, async () => {
   console.log(`Servicio de Notificaciones corriendo en puerto ${port}`);
-  // const { startSubscribers } = require('./events/notificationSubscriber');
-  // await startSubscribers();
+  const { startSubscribers } = require('./events/notificationSubscriber');
+  try {
+    await startSubscribers();
+  } catch (err) {
+    console.error('[app] Broker connection failed:', err.message);
+    process.exit(1);
+  }
 });
