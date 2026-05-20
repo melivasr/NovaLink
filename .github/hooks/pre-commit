@@ -1,0 +1,69 @@
+#!/bin/sh
+
+echo "[pre-commit] Verificaciones por servicio"
+
+SERVICES="auth users products orders notifications"
+FAILED=0
+
+for SERVICE in $SERVICES; do
+  CHANGED=$(git diff --cached --name-only | grep "^services/$SERVICE/")
+
+  if [ -z "$CHANGED" ]; then
+    continue
+  fi
+
+  echo ""
+  echo "=== $SERVICE ==="
+
+  # ESLint solo en archivos JS staged de este servicio
+  STAGED_JS=$(git diff --cached --name-only | grep "^services/$SERVICE/.*\.js$" | sed "s|services/$SERVICE/||")
+  if [ -n "$STAGED_JS" ]; then
+    echo "[lint] Ejecutando ESLint..."
+    (cd "services/$SERVICE" && echo "$STAGED_JS" | xargs ./node_modules/.bin/eslint --max-warnings=0 2>&1)
+    if [ $? -ne 0 ]; then
+      echo "[lint] Fallo — corrija los errores antes de commitear."
+      FAILED=1
+    else
+      echo "[lint] Funciona"
+    fi
+  fi
+
+  # Jest para el servicio con cambios
+  echo "[test] Ejecutando Jest..."
+  (cd "services/$SERVICE" && npm test 2>&1)
+  if [ $? -ne 0 ]; then
+    echo "[test] Fallo — los tests no pasan."
+    FAILED=1
+  else
+    echo "[test] Funciona"
+  fi
+done
+
+# Escaneo basico de secretos hardcodeados en archivos staged
+STAGED_ALL=$(git diff --cached --name-only --diff-filter=ACMR | grep -Ev "node_modules|package-lock" | grep -E "\.(js|env|yml|yaml|json)$")
+if [ -n "$STAGED_ALL" ]; then
+  echo ""
+  echo "=== Escaneo de secretos ==="
+  SECRET_FOUND=0
+  for FILE in $STAGED_ALL; do
+    if [ -f "$FILE" ] && grep -qiE '(password|api_key|secret|private_key)\s*[:=]\s*["'"'"'][^"'"'"']{8,}' "$FILE" 2>/dev/null; then
+      echo "ADVERTENCIA: Posible credencial detectada en: $FILE"
+      SECRET_FOUND=1
+    fi
+  done
+  if [ $SECRET_FOUND -eq 1 ]; then
+    echo "Error: Elimine las credenciales antes de hacer commit."
+    FAILED=1
+  else
+    echo "Todo bien: Sin secretos detectados."
+  fi
+fi
+
+if [ $FAILED -ne 0 ]; then
+  echo ""
+  echo "==> COMMIT BLOQUEADO."
+  exit 1
+fi
+
+echo ""
+echo "==> Todas las verificaciones pasaron. Commit permitido."

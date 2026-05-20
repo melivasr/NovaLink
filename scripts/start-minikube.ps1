@@ -78,6 +78,8 @@ kubectl apply -f (Join-Path $repoRoot 'k8s/deployments')
 Assert-LastExit 'kubectl apply deployments'
 
 Write-Host 'Waiting for database deployments...'
+kubectl rollout status deployment/rabbitmq --timeout=240s
+Assert-LastExit 'rabbitmq rollout'
 kubectl rollout status deployment/users-db --timeout=240s
 Assert-LastExit 'users-db rollout'
 kubectl rollout status deployment/products-db --timeout=240s
