@@ -6,6 +6,7 @@ const statusColor = {
   Pendiente:  '#F2C94C',
   Completada: '#6FCF97',
   Cancelada:  '#EB5757',
+  Procesando:  '#F2994A',
 }
 
 function MyOrdersPage() {
