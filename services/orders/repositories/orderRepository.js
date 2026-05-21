@@ -64,7 +64,28 @@ class OrderRepository {
       client.release();
     }
   }
-
+  async createWithId(orderId, userId, items) {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query(
+        `INSERT INTO orders (id, user_id, status) VALUES ($1, $2, $3)`,
+        [orderId, userId, 'Procesando']
+      );
+      for (const item of items) {
+        await client.query(
+          'INSERT INTO cart_items (order_id, product_id, quantity) VALUES ($1, $2, $3)',
+          [orderId, item.skillId, item.quantity]
+        );
+      }
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
   async updateStatus(id, status) {
     const result = await pool.query(
       'UPDATE orders SET status = $1 WHERE id = $2 RETURNING id, user_id, status, total_amount, created_at',

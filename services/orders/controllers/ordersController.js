@@ -12,16 +12,9 @@ const getOrderById = async (req, res) => {
   } catch (error) { handleError(res, error); }
 };
 
-const createOrder = async (req, res) => {
+const checkout = async (req, res) => {
   try {
-    const data = await orderService.createOrder(req.user.user_id, req.body.items);
-    res.status(201).json({ success: true, data, message: 'Pedido creado exitosamente' });
-  } catch (error) { handleError(res, error); }
-};
-
-const checkoutOrder = async (req, res) => {
-  try {
-    const data = await orderService.checkoutOrder(req.params.id, req.user);
+    const data = await orderService.checkout(req.user.user_id, req.body.items, req.user);
     res.status(202).json({ success: true, data, message: data.message });
   } catch (error) { handleError(res, error); }
 };
@@ -40,4 +33,4 @@ const getUserOrders = async (req, res) => {
   } catch (error) { handleError(res, error); }
 };
 
-module.exports = { getOrderById, createOrder, checkoutOrder, cancelOrder, getUserOrders };
+module.exports = { getOrderById, checkout, cancelOrder, getUserOrders };
