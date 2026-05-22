@@ -1,5 +1,6 @@
 const bcryptjs = require('bcryptjs');
 const UserRepository = require('../repositories/userRepository');
+const { publish } = require('../events/broker');
 
 class UserService {
   constructor() {
@@ -24,8 +25,16 @@ class UserService {
     if (!emailRegex.test(email)) {
       throw { status: 400, message: 'Email inválido' };
     }
+
     const passwordHash = await bcryptjs.hash(password, 10);
-    return this.repo.create({ name, email, passwordHash });
+    await publish('usuario.registrado', {
+      name,
+      email,
+      passwordHash,
+      timestamp: new Date().toISOString()
+    });
+
+    return { message: 'Registro en proceso, tu cuenta estará lista en breve.' };
   }
 
   async updateUser(id, { name, email, password }) {
@@ -76,6 +85,8 @@ class UserService {
     const skills = await this.repo.findSkills(userId);
     return { user, skills };
   }
+
+  
 }
 
 module.exports = UserService;
