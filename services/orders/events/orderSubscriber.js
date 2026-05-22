@@ -5,7 +5,6 @@ const repo = new OrderRepository();
 
 async function handleOrdenCreada({ orderId, userId, issued_by, items, timestamp }) {
   await repo.createWithId(orderId, userId, items);
-  await repo.updateStatus(orderId, 'Procesando');
   console.log(`[orders] Order ${orderId} → creada en DB como Procesando`);
 
   await publish('pedido.creado', {

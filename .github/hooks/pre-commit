@@ -16,7 +16,7 @@ for SERVICE in $SERVICES; do
   echo "=== $SERVICE ==="
 
   # ESLint solo en archivos JS staged de este servicio
-  STAGED_JS=$(git diff --cached --name-only | grep "^services/$SERVICE/.*\.js$" | sed "s|services/$SERVICE/||")
+  STAGED_JS=$(git diff --cached --name-only --diff-filter=ACMR | grep "^services/$SERVICE/.*\.js$" | sed "s|services/$SERVICE/||")
   if [ -n "$STAGED_JS" ]; then
     echo "[lint] Ejecutando ESLint..."
     (cd "services/$SERVICE" && echo "$STAGED_JS" | xargs ./node_modules/.bin/eslint --max-warnings=0 2>&1)
