@@ -32,7 +32,7 @@ const getUserById = async (req, res) => {
 const createUser = async (req, res) => {
   try {
     const data = await service.createUser(req.body);
-    res.status(201).json({ success: true, data, message: 'Usuario creado exitosamente' });
+    res.status(202).json({ success: true, data, message: 'Usuario creado exitosamente' });
   } catch (error) {
     handleError(res, error);
   }
