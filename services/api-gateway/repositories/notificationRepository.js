@@ -1,0 +1,22 @@
+const { Pool } = require('pg');
+
+const pool = new Pool({
+  user:     process.env.NOTIF_DB_USER     || 'novalink_user',
+  host:     process.env.NOTIF_DB_HOST     || 'localhost',
+  database: process.env.NOTIF_DB_NAME     || 'notifications_db',
+  password: process.env.NOTIF_DB_PASSWORD || 'novalink_pass',
+  port:     process.env.NOTIF_DB_PORT     || 5432
+});
+
+class NotificationRepository {
+  async findByUser(userId) {
+    const result = await pool.query(
+      `SELECT id, user_id, order_id, message, is_read, created_at
+       FROM notifications WHERE user_id = $1 ORDER BY created_at DESC`,
+      [userId]
+    );
+    return result.rows;
+  }
+}
+
+module.exports = NotificationRepository;
