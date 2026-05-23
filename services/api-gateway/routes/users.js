@@ -9,31 +9,31 @@ const repo = new UserRepository();
 // GET — directo al repo
 router.get('/', async (req, res) => {
   try {
-    const users = await repo.findAll();
-    res.json({ data: users });
+    const data = await repo.findAll();
+    res.json({ success: true, data });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
 router.get('/:id', async (req, res) => {
   try {
-    const user = await repo.findById(req.params.id);
-    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
-    res.json(user);
+    const data = await repo.findById(req.params.id);
+    if (!data) return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+    res.json({ success: true, data });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
 router.get('/:id/skills', async (req, res) => {
   try {
     const user = await repo.findById(req.params.id);
-    if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
-    const skills = await repo.findSkills(req.params.id);
-    res.json({ user, skills });
+    if (!user) return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+    const data = await repo.findSkills(req.params.id);
+    res.json({ success: true, data });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 

@@ -11,7 +11,7 @@ const pool = new Pool({
 class NotificationRepository {
   async findByUser(userId) {
     const result = await pool.query(
-      `SELECT id, user_id, order_id, message, is_read, created_at
+      `SELECT id, user_id, order_id, message, is_read AS read, created_at AS "createdAt"
        FROM notifications WHERE user_id = $1 ORDER BY created_at DESC`,
       [userId]
     );

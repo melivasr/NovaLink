@@ -8,10 +8,10 @@ const repo = new NotificationRepository();
 // GET — directo al repo
 router.get('/user/:userId', async (req, res) => {
   try {
-    const notifications = await repo.findByUser(req.params.userId);
-    res.json(notifications);
+    const data = await repo.findByUser(req.params.userId);
+    res.json({ success: true, data });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 

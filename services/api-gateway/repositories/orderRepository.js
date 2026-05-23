@@ -11,7 +11,7 @@ const pool = new Pool({
 class OrderRepository {
   async findById(id) {
     const orderResult = await pool.query(
-      'SELECT id, user_id, status, total_amount, created_at FROM orders WHERE id = $1',
+      `SELECT id, user_id, status, total_amount AS "totalAmount", created_at AS "createdAt" FROM orders WHERE id = $1`,
       [id]
     );
     if (orderResult.rows.length === 0) return null;
@@ -25,7 +25,7 @@ class OrderRepository {
 
   async findByUser(userId) {
     const ordersResult = await pool.query(
-      'SELECT id, user_id, status, total_amount, created_at FROM orders WHERE user_id = $1 ORDER BY created_at ASC',
+      `SELECT id, user_id, status, total_amount AS "totalAmount", created_at AS "createdAt" FROM orders WHERE user_id = $1 ORDER BY created_at ASC`,
       [userId]
     );
     const orders = [];

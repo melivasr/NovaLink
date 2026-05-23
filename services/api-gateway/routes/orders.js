@@ -10,20 +10,20 @@ const repo = new OrderRepository();
 // GET — directo al repo
 router.get('/user/:userId', async (req, res) => {
   try {
-    const orders = await repo.findByUser(req.params.userId);
-    res.json(orders);
+    const data = await repo.findByUser(req.params.userId);
+    res.json({ success: true, data });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
 router.get('/:id', async (req, res) => {
   try {
-    const order = await repo.findById(req.params.id);
-    if (!order) return res.status(404).json({ error: 'Orden no encontrada' });
-    res.json(order);
+    const data = await repo.findById(req.params.id);
+    if (!data) return res.status(404).json({ success: false, message: 'Orden no encontrada' });
+    res.json({ success: true, data });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
@@ -35,8 +35,8 @@ router.post('/', verifyToken, async (req, res) => {
       return res.status(400).json({ error: 'Se requieren items para la orden' });
     }
     const orderId = uuidv4();
-    const userId = req.user.id;
-    const issued_by = req.user.name || req.user.email;
+    const userId = req.user.user_id;
+    const issued_by = req.user.username || req.user.email;
     await publish('orden.creada', { orderId, userId, issued_by, items, timestamp: new Date().toISOString() });
     res.status(202).json({ id: orderId, status: 'Procesando', message: 'Pedido en procesamiento asíncrono' });
   } catch (err) {
