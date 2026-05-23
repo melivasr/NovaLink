@@ -38,9 +38,23 @@ async function handlePedidoCreado({ orderId, userId, items }) {
   console.log(`[inventory] inventario.confirmado for order ${orderId}, total: ${totalAmount}`);
 }
 
+async function handleProductoActualizado({ productId, name, difficulty, xp_points, stock, is_activated }) {
+  const current = await repo.findById(productId);
+  if (!current) { console.warn(`[inventory] producto.actualizado: product ${productId} not found`); return; }
+  await repo.update(productId, {
+    name:         name         ?? current.name,
+    difficulty:   difficulty   ?? current.difficulty,
+    xp_points:    xp_points    ?? current.xp_points,
+    stock:        stock        ?? current.stock,
+    is_activated: is_activated ?? current.is_activated
+  });
+  console.log(`[inventory] Producto ${productId} → actualizado en DB`);
+}
+
 async function startSubscribers() {
   await connectWithRetry();
   await subscribe('products.pedido.creado', 'pedido.creado', handlePedidoCreado);
+  await subscribe('products.producto.actualizado', 'producto.actualizado', handleProductoActualizado);
 }
 
 module.exports = { startSubscribers };

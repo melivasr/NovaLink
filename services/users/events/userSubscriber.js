@@ -18,10 +18,22 @@ async function handleInventarioConfirmado({ userId, items }) {
   console.log(`[users] Skills updated for user ${userId}`);
 }
 
+async function handleUsuarioActualizado({ userId, name, email, passwordHash }) {
+  const current = await repo.findByIdFull(userId);
+  if (!current) { console.warn(`[users] usuario.actualizado: user ${userId} not found`); return; }
+  await repo.update(userId, {
+    name: name ?? current.name,
+    email: email ?? current.email,
+    passwordHash: passwordHash ?? current.password_hash
+  });
+  console.log(`[users] Usuario ${userId} → actualizado en DB`);
+}
+
 async function startSubscribers() {
   await connectWithRetry();
   await subscribe('users.usuario.registrado', 'usuario.registrado', handleUsuarioRegistrado);
   await subscribe('users.inventario.confirmado', 'inventario.confirmado', handleInventarioConfirmado);
+  await subscribe('users.usuario.actualizado', 'usuario.actualizado', handleUsuarioActualizado);
 }
 
 module.exports = { startSubscribers };
