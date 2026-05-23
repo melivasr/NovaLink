@@ -60,7 +60,8 @@ $services = @(
     @{ Name = 'auth-service'; Container = 'auth'; Path = 'services/auth'; Tag = "novalink/auth-service:$imageTag" },
     @{ Name = 'products-service'; Container = 'products'; Path = 'services/products'; Tag = "novalink/products-service:$imageTag" },
     @{ Name = 'orders-service'; Container = 'orders'; Path = 'services/orders'; Tag = "novalink/orders-service:$imageTag" },
-    @{ Name = 'notifications-service'; Container = 'notifications'; Path = 'services/notifications'; Tag = "novalink/notifications-service:$imageTag" }
+    @{ Name = 'notifications-service'; Container = 'notifications'; Path = 'services/notifications'; Tag = "novalink/notifications-service:$imageTag" },
+    @{ Name = 'api-gateway'; Container = 'api-gateway'; Path = 'services/api-gateway'; Tag = "novalink/api-gateway:$imageTag" }
 )
 
 Write-Host 'Building service images...'
@@ -109,6 +110,8 @@ kubectl rollout status deployment/orders-service --timeout=240s
 Assert-LastExit 'orders-service rollout'
 kubectl rollout status deployment/notifications-service --timeout=240s
 Assert-LastExit 'notifications-service rollout'
+kubectl rollout status deployment/api-gateway --timeout=240s
+Assert-LastExit 'api-gateway rollout'
 
 Write-Host 'Done. Current pods:'
 kubectl get pods -o wide
