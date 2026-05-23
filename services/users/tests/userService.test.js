@@ -1,7 +1,9 @@
 jest.mock('../repositories/userRepository');
+jest.mock('../events/broker', () => ({ publish: jest.fn().mockResolvedValue() }));
 
 const UserService = require('../services/userService');
 const UserRepository = require('../repositories/userRepository');
+const { publish } = require('../events/broker');
 
 let service;
 let mockRepo;
@@ -27,11 +29,10 @@ test('createUser with invalid email format should throw status 400', async () =>
     .rejects.toMatchObject({ status: 400 });
 });
 
-test('createUser with valid data should return created user', async () => {
-  const created = { id: 1, name: 'Ana', email: 'ana@test.com', created_at: new Date() };
-  mockRepo.create = jest.fn().mockResolvedValue(created);
+test('createUser with valid data should publish usuario.registrado', async () => {
   const result = await service.createUser({ name: 'Ana', email: 'ana@test.com', password: 'pass123' });
-  expect(result.email).toBe('ana@test.com');
+  expect(publish).toHaveBeenCalledWith('usuario.registrado', expect.objectContaining({ name: 'Ana', email: 'ana@test.com' }));
+  expect(result.message).toBeDefined();
 });
 
 test('getUserById with non-existent id should throw status 404', async () => {
