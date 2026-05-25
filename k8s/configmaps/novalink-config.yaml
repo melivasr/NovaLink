@@ -20,6 +20,7 @@ data:
   ORDERS_PORT: "3003"
   NOTIFICATIONS_PORT: "3004"
   AUTH_PORT: "3005"
+  RABBITMQ_URL: "amqp://novalink:novalink_pass@rabbitmq:5672"
 
   # URLs de comunicación interna entre servicios 
   USERS_SERVICE_URL: "http://users-service:3001"

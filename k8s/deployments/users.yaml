@@ -128,6 +128,11 @@ spec:
                 secretKeyRef:
                   name: novalink-secrets
                   key: DB_PASSWORD
+            - name: RABBITMQ_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: novalink-config
+                  key: RABBITMQ_URL
           readinessProbe:
             httpGet:
               path: /health

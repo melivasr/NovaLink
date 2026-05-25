@@ -4,6 +4,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $repoRoot
 
 $services = @(
+    @{ Name = 'api-gateway'; LocalPort = 3000; RemotePort = 3000 },
     @{ Name = 'users-service'; LocalPort = 3001; RemotePort = 3001 },
     @{ Name = 'products-service'; LocalPort = 3002; RemotePort = 3002 },
     @{ Name = 'orders-service'; LocalPort = 3003; RemotePort = 3003 },
@@ -18,6 +19,7 @@ foreach ($service in $services) {
 
 Write-Host 'Port-forwards started in separate PowerShell windows.'
 Write-Host 'Use these URLs:'
+Write-Host 'http://127.0.0.1:3000/health  (API Gateway)'
 Write-Host 'http://127.0.0.1:3001/health'
 Write-Host 'http://127.0.0.1:3002/health'
 Write-Host 'http://127.0.0.1:3003/health'

@@ -1,6 +1,6 @@
 const OrderRepository = require('../repositories/orderRepository');
 const { publish } = require('../events/broker');
-
+const { v4: uuidv4 } = require('uuid');
 const repo = new OrderRepository();
 
 const getOrderById = async (id) => {
@@ -14,35 +14,24 @@ const getUserOrders = async (userId) => {
   return orders.map(_format);
 };
 
-const createOrder = async (userId, items) => {
-  if (!items || !Array.isArray(items) || items.length === 0) {
+const checkout = async (userId, items, tokenUser = {}) => {
+  if (!items || !Array.isArray(items) || items.length === 0)
     throw { status: 400, message: 'items es requerido' };
-  }
   for (const item of items) {
-    if (!item.skillId || !item.quantity || item.quantity < 1) {
+    if (!item.skillId || !item.quantity || item.quantity < 1)
       throw { status: 400, message: 'Cada item debe tener skillId y quantity mayor a 0' };
-    }
   }
-  const order = await repo.create(userId, items);
-  return _format({ ...order, items });
-};
 
-const checkoutOrder = async (id, tokenUser = {}) => {
-  const order = await repo.findById(id);
-  if (!order) throw { status: 404, message: 'Pedido no encontrado' };
-  if (order.status !== 'Pendiente') throw { status: 400, message: 'El pedido ya fue procesado' };
-
-  await repo.updateStatus(id, 'Procesando');
-
-  await publish('pedido.creado', {
-    orderId: order.id,
-    userId: order.user_id,
+  const orderId = uuidv4();
+  await publish('orden.creada', {
+    orderId,
+    userId,
     issued_by: tokenUser.issued_by || 'auth-service',
-    items: order.items,
+    items,
     timestamp: new Date().toISOString()
   });
 
-  return { id: order.id, status: 'Procesando', message: 'Pedido en procesamiento asíncrono' };
+  return { id: orderId, status: 'Procesando', message: 'Pedido en procesamiento asíncrono' };
 };
 
 const cancelOrder = async (id) => {
@@ -59,4 +48,4 @@ const _format = (order) => ({
   items: order.items || []
 });
 
-module.exports = { getOrderById, getUserOrders, createOrder, checkoutOrder, cancelOrder };
+module.exports = { getOrderById, getUserOrders, checkout, cancelOrder };

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
-import { createOrder, checkoutOrder } from '../services/ordersService'
+import { checkout } from '../services/ordersService'
 
 function OrdersPage() {
   const { cart, removeFromCart, updateQuantity, clearCart } = useCart()
@@ -10,11 +10,6 @@ function OrdersPage() {
   const [success, setSuccess] = useState('')
   const navigate = useNavigate()
 
-  //const userId = localStorage.getItem('userId')
-  const token = localStorage.getItem('token')
-  const payload = token ? JSON.parse(atob(token.split('.')[1])) : null
-  const userId = payload?.user_id
-
   async function handleCheckout() {
     if (cart.length === 0) return
     setLoading(true)
@@ -22,17 +17,18 @@ function OrdersPage() {
     setSuccess('')
 
     try {
-      const order = await createOrder(userId, cart)
-      await checkoutOrder(order.data.id)
-      setSuccess('¡Orden completada! Habilidades adquiridas.')
+      await checkout(cart)
+      setSuccess('¡Orden enviada! Será procesada en breve.')
       clearCart()
-      setTimeout(() => navigate('/catalog'), 2000)
+      setTimeout(() => navigate('/my-orders'), 2000)
     } catch (err) {
       setError(err.message)
     } finally {
       setLoading(false)
     }
   }
+
+  
 
   if (cart.length === 0 && !success) {
     return (

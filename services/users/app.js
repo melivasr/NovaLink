@@ -19,6 +19,11 @@ app.get('/', (req, res) => {
 
 app.listen(port, async () => {
   console.log(`Servicio de Usuarios corriendo en puerto ${port}`);
-  // const { startSubscribers } = require('./events/userSubscriber');
-  // await startSubscribers();
+  const { startSubscribers } = require('./events/userSubscriber');
+  try {
+    await startSubscribers();
+  } catch (err) {
+    console.error('[app] Broker connection failed:', err.message);
+    process.exit(1);
+  }
 });
