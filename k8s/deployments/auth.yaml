@@ -88,10 +88,11 @@ metadata:
     app: novalink
     component: auth-service
 spec:
-  type: ClusterIP
+  type: NodePort
   selector:
     component: auth-service
   ports:
     - protocol: TCP
       port: 3005
       targetPort: 3005
+      nodePort: 30005

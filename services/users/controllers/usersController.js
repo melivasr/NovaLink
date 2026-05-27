@@ -1,381 +1,92 @@
-const { Pool } = require('pg');
-const bcryptjs = require('bcryptjs');
+const UserService = require('../services/userService');
 
-const pool = new Pool({
-  user: process.env.DB_USER || 'postgres',
-  host: process.env.DB_HOST || 'localhost',
-  database: process.env.DB_NAME || 'users-db',
-  password: process.env.DB_PASSWORD || 'postgres',
-  port: process.env.DB_PORT || 5432
-});
+const service = new UserService();
+
+const handleError = (res, error) => {
+  const status = error.status || 500;
+  const message = error.message || 'Error interno del servidor';
+  if (error.code === '23505') {
+    return res.status(400).json({ success: false, message: 'El email ya existe' });
+  }
+  res.status(status).json({ success: false, message });
+};
 
 const getAllUsers = async (req, res) => {
   try {
-    const results = await pool.query(
-      'SELECT id, name, email, created_at FROM users ORDER BY created_at ASC'
-    );
-    res.status(200).json({ success: true, data: results.rows });
+    const data = await service.getAllUsers();
+    res.status(200).json({ success: true, data });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: 'Error obteniendo usuarios' });
+    handleError(res, error);
   }
 };
 
 const getUserById = async (req, res) => {
-  const id = req.params.id;
-
   try {
-    const results = await pool.query(
-      'SELECT id, name, email, created_at FROM users WHERE id = $1',
-      [id]
-    );
-
-    if (results.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Usuario no encontrado'
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      data: results.rows[0]
-    });
+    const data = await service.getUserById(req.params.id);
+    res.status(200).json({ success: true, data });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      success: false,
-      message: 'Usuario no encontrado'
-    });
+    handleError(res, error);
   }
 };
 
 const createUser = async (req, res) => {
-  const { name, email, password } = req.body;
-
-  if (!name || !email || !password) {
-    return res.status(400).json({
-      success: false,
-      message: 'Nombre, email y password son requeridos'
-    });
-  }
-
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    return res.status(400).json({
-      success: false,
-      message: 'Email inválido'
-    });
-  }
-  const passwordHash = await bcryptjs.hash(password, 10);
   try {
-    const results = await pool.query(
-      `INSERT INTO users (name, email, password_hash)
-       VALUES ($1, $2, $3)
-       RETURNING id, name, email, created_at`,
-      [name, email, passwordHash]
-    );
-
-    res.status(201).json({
-      success: true,
-      data: results.rows[0],
-      message: 'Usuario creado exitosamente'
-    });
+    const data = await service.createUser(req.body);
+    res.status(202).json({ success: true, data, message: 'Usuario creado exitosamente' });
   } catch (error) {
-    console.error(error);
-
-    if (error.code === '23505') {
-      return res.status(400).json({
-        success: false,
-        message: 'El email ya existe'
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      message: 'Error creando usuario'
-    });
+    handleError(res, error);
   }
 };
 
 const updateUser = async (req, res) => {
-  const id = req.params.id;
-  const { name, email, password } = req.body;
-
   try {
-    const existing = await pool.query(
-      'SELECT * FROM users WHERE id = $1',
-      [id]
-    );
-
-    if (existing.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Usuario no encontrado'
-      });
-    }
-
-    const current = existing.rows[0];
-
-    const updatedName = name !== undefined ? name : current.name;
-    const updatedEmail = email !== undefined ? email : current.email;
-    const updatedPassword = password !== undefined ? password : current.password_hash;
-
-    const results = await pool.query(
-      `UPDATE users
-       SET name = $1,
-           email = $2,
-           password_hash = $3
-       WHERE id = $4
-       RETURNING id, name, email, created_at`,
-      [updatedName, updatedEmail, updatedPassword, id]
-    );
-
-    res.status(200).json({
-      success: true,
-      data: results.rows[0],
-      message: 'Usuario actualizado exitosamente'
-    });
+    const data = await service.updateUser(req.params.id, req.body);
+    res.status(200).json({ success: true, data, message: 'Usuario actualizado exitosamente' });
   } catch (error) {
-    console.error(error);
-
-    if (error.code === '23505') {
-      return res.status(400).json({
-        success: false,
-        message: 'El email ya existe'
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      message: 'Error actualizando usuario'
-    });
+    handleError(res, error);
   }
 };
 
 const deleteUser = async (req, res) => {
-  const id = req.params.id;
-
   try {
-    await pool.query('DELETE FROM user_skills WHERE user_id = $1', [id]);
-
-    const result = await pool.query(
-      'DELETE FROM users WHERE id = $1',
-      [id]
-    );
-
-    if (result.rowCount === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Usuario no encontrado'
-      });
-    }
-
+    await service.deleteUser(req.params.id);
     res.status(204).send();
   } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      success: false,
-      message: 'Error eliminando usuario'
-    });
+    handleError(res, error);
   }
 };
 
 const getUserSkills = async (req, res) => {
-  const id = req.params.id;
-
   try {
-    const userResult = await pool.query(
-      'SELECT id, name FROM users WHERE id = $1',
-      [id]
-    );
-
-    if (userResult.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Usuario no encontrado'
-      });
-    }
-
-    const skillsResult = await pool.query(
-      `SELECT product_id, xp_accumulated, acquired_at
-       FROM user_skills
-       WHERE user_id = $1
-       ORDER BY acquired_at ASC`,
-      [id]
-    );
-
+    const { user, skills } = await service.getUserSkills(req.params.id);
     res.status(200).json({
       success: true,
-      data: skillsResult.rows,
-      message: `Habilidades del usuario ${userResult.rows[0].name}`
+      data: skills,
+      message: `Habilidades del usuario ${user.name}`
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      success: false,
-      message: 'Error obteniendo habilidades del usuario'
-    });
+    handleError(res, error);
   }
 };
 
 const addSkillToUser = async (req, res) => {
-  const id = req.params.id;
-  const { skillId, xp } = req.body;
-
-  if (!skillId) {
-    return res.status(400).json({
-      success: false,
-      message: 'skillId es requerido'
-    });
-  }
-
-  const xpToAdd = xp && xp > 0 ? xp : 0;
-
   try {
-    const userResult = await pool.query(
-      'SELECT id, name, email, created_at FROM users WHERE id = $1',
-      [id]
-    );
-
-    if (userResult.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Usuario no encontrado'
-      });
-    }
-
-    await pool.query(
-      `INSERT INTO user_skills (user_id, product_id, xp_accumulated)
-       VALUES ($1, $2, $3)
-       ON CONFLICT (user_id, product_id)
-       DO UPDATE SET xp_accumulated = user_skills.xp_accumulated + EXCLUDED.xp_accumulated`,
-      [id, skillId, xpToAdd]
-    );
-
-    const updatedSkills = await pool.query(
-      `SELECT product_id, xp_accumulated, acquired_at
-       FROM user_skills
-       WHERE user_id = $1
-       ORDER BY acquired_at ASC`,
-      [id]
-    );
-
-    res.status(200).json({
-      success: true,
-      data: {
-        user: userResult.rows[0],
-        skills: updatedSkills.rows
-      },
-      message: 'Habilidad actualizada exitosamente'
-    });
+    const { user, skills } = await service.addSkillToUser(req.params.id, req.body);
+    res.status(200).json({ success: true, data: { user, skills }, message: 'Habilidad actualizada exitosamente' });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      success: false,
-      message: 'Error agregando habilidad al usuario'
-    });
+    handleError(res, error);
   }
 };
 
 const removeSkillFromUser = async (req, res) => {
-  const id = req.params.id;
-  const { skillId } = req.body;
-
-  if (!skillId) {
-    return res.status(400).json({
-      success: false,
-      message: 'skillId es requerido'
-    });
-  }
-
   try {
-    const userResult = await pool.query(
-      'SELECT id, name, email, created_at FROM users WHERE id = $1',
-      [id]
-    );
-
-    if (userResult.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Usuario no encontrado'
-      });
-    }
-
-    const result = await pool.query(
-      'DELETE FROM user_skills WHERE user_id = $1 AND product_id = $2',
-      [id, skillId]
-    );
-
-    if (result.rowCount === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Usuario no posee esta habilidad'
-      });
-    }
-
-    const updatedSkills = await pool.query(
-      `SELECT product_id, acquired_at
-       FROM user_skills
-       WHERE user_id = $1
-       ORDER BY acquired_at ASC`,
-      [id]
-    );
-
-    res.status(200).json({
-      success: true,
-      data: {
-        user: userResult.rows[0],
-        skills: updatedSkills.rows
-      },
-      message: 'Habilidad removida exitosamente'
-    });
+    const { user, skills } = await service.removeSkillFromUser(req.params.id, req.body);
+    res.status(200).json({ success: true, data: { user, skills }, message: 'Habilidad removida exitosamente' });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      success: false,
-      message: 'Error removiendo habilidad del usuario'
-    });
+    handleError(res, error);
   }
 };
 
-
-const loginUser = async (req, res) => {
-  const { email, password } = req.body
-
-  if (!email || !password) {
-    return res.status(400).json({
-      success: false,
-      message: 'Email y password son requeridos'
-    })
-  }
-
-  try {
-    const results = await pool.query(
-      'SELECT id, name, email, is_admin FROM users WHERE email = $1 AND password_hash = $2',
-      [email, password]
-    )
-
-    if (results.rows.length === 0) {
-      return res.status(401).json({
-        success: false,
-        message: 'Email o password incorrectos'
-      })
-    }
-
-    res.status(200).json({
-      success: true,
-      data: results.rows[0],
-      message: 'Login exitoso'
-    })
-  } catch (error) {
-    console.error(error)
-    res.status(500).json({
-      success: false,
-      message: 'Error en login'
-    })
-  }
-}
-
 module.exports = {getAllUsers, getUserById, createUser, updateUser,
-  deleteUser, getUserSkills, addSkillToUser, removeSkillFromUser, loginUser};
+  deleteUser, getUserSkills, addSkillToUser, removeSkillFromUser
+};

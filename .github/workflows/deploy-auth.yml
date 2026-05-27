@@ -4,9 +4,14 @@ on:
   push:
     branches:
       - main
+      - develop
     paths:
       - 'services/auth/**'
       - '.github/workflows/deploy-auth.yml'
+
+concurrency:
+  group: deploy-auth-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   build-and-deploy:
@@ -58,7 +63,11 @@ jobs:
           git config --global user.name "GitHub Actions"
           git add k8s/deployments/auth.yaml
           git commit -m "Update auth-service image to ${{ github.sha }}" --allow-empty
-          git push
+          for i in 1 2 3 4 5; do
+            git pull --rebase origin ${{ github.ref_name }} && git push && break
+            echo "Push failed, reintentando ($i/5)..."
+            sleep 5
+          done
 
       - name: Deploy to Kubernetes (if cluster configured)
         run: |

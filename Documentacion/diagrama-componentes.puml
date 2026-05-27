@@ -1,0 +1,65 @@
+@startuml
+!theme plain
+left to right direction
+skinparam componentStyle uml2
+skinparam linetype ortho
+skinparam nodesep 80
+skinparam ranksep 150
+skinparam padding 10
+
+title Diagrama de Componentes - NovaLink
+
+package "1. Cliente" {
+    component "FrontEnd (React/Vite)" as frontend
+}
+
+package "2. Entrada" {
+    component "API Gateway" as gateway
+}
+
+package "3. Core" {
+    queue "RabbitMQ (Broker)" as broker
+    component "Auth Service" as auth
+}
+
+package "4. Microservicios" {
+    component "Users Service" as users
+    component "Products Service" as products
+    component "Orders Service" as orders
+    component "Notifications Service" as notifications
+}
+
+package "5. Dato" {
+    database "Users DB" as db_users
+    database "Products DB" as db_products
+    database "Orders DB" as db_orders
+    database "Notifications DB" as db_notif
+}
+
+' ==========================================
+' RELACIONES
+' ==========================================
+
+frontend --> gateway : HTTP/REST
+
+gateway --> auth : POST /login
+gateway --> broker : Publish (Mutations)
+
+' CQRS Reads
+gateway --> db_users : Direct Read
+gateway --> db_products : Direct Read
+gateway --> db_orders : Direct Read
+
+' Broker <-> Microservices
+broker <--> users : Pub/Sub
+broker <--> products : Pub/Sub
+broker <--> orders : Pub/Sub
+broker --> notifications : Subscribe
+
+' Microservices -> Databases
+users --> db_users : Write
+products --> db_products : Write
+orders --> db_orders : Write
+notifications --> db_notif : Write
+
+@enduml

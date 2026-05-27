@@ -60,7 +60,8 @@ $services = @(
     @{ Name = 'auth-service'; Container = 'auth'; Path = 'services/auth'; Tag = "novalink/auth-service:$imageTag" },
     @{ Name = 'products-service'; Container = 'products'; Path = 'services/products'; Tag = "novalink/products-service:$imageTag" },
     @{ Name = 'orders-service'; Container = 'orders'; Path = 'services/orders'; Tag = "novalink/orders-service:$imageTag" },
-    @{ Name = 'notifications-service'; Container = 'notifications'; Path = 'services/notifications'; Tag = "novalink/notifications-service:$imageTag" }
+    @{ Name = 'notifications-service'; Container = 'notifications'; Path = 'services/notifications'; Tag = "novalink/notifications-service:$imageTag" },
+    @{ Name = 'api-gateway'; Container = 'api-gateway'; Path = 'services/api-gateway'; Tag = "novalink/api-gateway:$imageTag" }
 )
 
 Write-Host 'Building service images...'
@@ -78,12 +79,16 @@ kubectl apply -f (Join-Path $repoRoot 'k8s/deployments')
 Assert-LastExit 'kubectl apply deployments'
 
 Write-Host 'Waiting for database deployments...'
+kubectl rollout status deployment/rabbitmq --timeout=240s
+Assert-LastExit 'rabbitmq rollout'
 kubectl rollout status deployment/users-db --timeout=240s
 Assert-LastExit 'users-db rollout'
 kubectl rollout status deployment/products-db --timeout=240s
 Assert-LastExit 'products-db rollout'
 kubectl rollout status deployment/orders-db --timeout=240s
 Assert-LastExit 'orders-db rollout'
+kubectl rollout status deployment/notifications-db --timeout=240s
+Assert-LastExit 'notifications-db rollout'
 
 Write-Host 'Initializing database schemas...'
 & (Join-Path $PSScriptRoot 'init-k8s-db.ps1')
@@ -105,6 +110,8 @@ kubectl rollout status deployment/orders-service --timeout=240s
 Assert-LastExit 'orders-service rollout'
 kubectl rollout status deployment/notifications-service --timeout=240s
 Assert-LastExit 'notifications-service rollout'
+kubectl rollout status deployment/api-gateway --timeout=240s
+Assert-LastExit 'api-gateway rollout'
 
 Write-Host 'Done. Current pods:'
 kubectl get pods -o wide

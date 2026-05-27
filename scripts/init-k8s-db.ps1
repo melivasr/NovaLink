@@ -26,6 +26,7 @@ function Exec-Sql {
 $usersDbPod = Get-PodByComponent -Component 'users-db'
 $productsDbPod = Get-PodByComponent -Component 'products-db'
 $ordersDbPod = Get-PodByComponent -Component 'orders-db'
+$notificationsDbPod = Get-PodByComponent -Component 'notifications-db'
 
 Write-Host 'Initializing users_db schema...'
 Exec-Sql -Pod $usersDbPod -Database 'users_db' -Sql "CREATE TABLE IF NOT EXISTS users (id UUID PRIMARY KEY DEFAULT (md5(random()::text || clock_timestamp()::text))::uuid, name VARCHAR(100) NOT NULL, email VARCHAR(150) NOT NULL UNIQUE, password_hash VARCHAR(255) NOT NULL, is_admin BOOLEAN NOT NULL DEFAULT FALSE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"
@@ -42,8 +43,9 @@ Write-Host 'Initializing orders_db schema...'
 Exec-Sql -Pod $ordersDbPod -Database 'orders_db' -Sql "CREATE TABLE IF NOT EXISTS orders (id UUID PRIMARY KEY DEFAULT (md5(random()::text || clock_timestamp()::text))::uuid, user_id UUID NOT NULL, status VARCHAR(20) NOT NULL DEFAULT 'Pendiente', total_amount NUMERIC(10,2) NOT NULL DEFAULT 0, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"
 Exec-Sql -Pod $ordersDbPod -Database 'orders_db' -Sql "ALTER TABLE orders ADD COLUMN IF NOT EXISTS total_amount NUMERIC(10,2) NOT NULL DEFAULT 0;"
 Exec-Sql -Pod $ordersDbPod -Database 'orders_db' -Sql 'CREATE TABLE IF NOT EXISTS cart_items (order_id UUID NOT NULL REFERENCES orders(id), product_id UUID NOT NULL, quantity INT NOT NULL DEFAULT 1 CHECK (quantity > 0), PRIMARY KEY (order_id, product_id));'
-Exec-Sql -Pod $ordersDbPod -Database 'orders_db' -Sql "CREATE TABLE IF NOT EXISTS notifications (id UUID PRIMARY KEY DEFAULT (md5(random()::text || clock_timestamp()::text))::uuid, user_id UUID NOT NULL, order_id UUID REFERENCES orders(id), message TEXT NOT NULL, is_read BOOLEAN NOT NULL DEFAULT FALSE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"
-Exec-Sql -Pod $ordersDbPod -Database 'orders_db' -Sql "ALTER TABLE notifications ALTER COLUMN order_id DROP NOT NULL;"
+
+Write-Host 'Initializing notifications-db schema...'
+Exec-Sql -Pod $notificationsDbPod -Database 'notifications-db' -Sql "CREATE TABLE IF NOT EXISTS notifications (id UUID PRIMARY KEY DEFAULT (md5(random()::text || clock_timestamp()::text))::uuid, user_id UUID NOT NULL, order_id UUID, message TEXT NOT NULL, is_read BOOLEAN NOT NULL DEFAULT FALSE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"
 
 Write-Host 'Seeding users_db...'
 Exec-Sql -Pod $usersDbPod -Database 'users_db' -Sql "INSERT INTO users (name, email, password_hash, is_admin)

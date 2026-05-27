@@ -22,6 +22,15 @@ export function CartProvider({ children }) {
     setCart((prev) => prev.map((i) => i.id === skillId ? { ...i, quantity } : i))
   }
 
+  function updateQuantity(skillId, quantity) {
+  if (quantity < 1) return
+  setCart((prev) => prev.map((i) => {
+    if (i.id !== skillId) return i
+    const maxQuantity = i.stock || 999
+    return { ...i, quantity: Math.min(quantity, maxQuantity) }
+  }))
+}
+
   function clearCart() {
     setCart([])
   }

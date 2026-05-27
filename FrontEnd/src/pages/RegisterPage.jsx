@@ -30,8 +30,9 @@ function RegisterPage() {
         //localStorage.setItem('userId', data.data.id)
         //localStorage.setItem('userEmail', data.data.email)
         //localStorage.setItem('userName', data.data.name)
-        setSuccess('Usuario registrado correctamente')
-        setTimeout(() => navigate('/'), 1500)
+        //setSuccess('Usuario registrado correctamente')
+        setSuccess('Tu cuenta está siendo procesada, en breve podrás iniciar sesión.')
+        setTimeout(() => navigate('/'), 3500)
     } catch (err) {
       setError(err.message)
     } finally {
