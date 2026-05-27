@@ -1,5 +1,5 @@
-const { subscribe, connectWithRetry } = require('./broker');
-const UserService = require('../services/userService');
+const { subscribe, connectWithRetry } = require('../events/broker');
+const UserService = require('./userService');
 const UserRepository = require('../repositories/userRepository');
 
 const service = new UserService();

@@ -5,8 +5,11 @@ const pool = new Pool({
   host:     process.env.USERS_DB_HOST     || 'localhost',
   database: process.env.USERS_DB_NAME     || 'users_db',
   password: process.env.USERS_DB_PASSWORD || 'novalink_pass',
-  port:     process.env.USERS_DB_PORT     || 5432
+  port:     process.env.USERS_DB_PORT     || 5432,
+  connectionTimeoutMillis: 3000,
+  idleTimeoutMillis: 10000,
 });
+pool.on('error', (err) => console.error('[gateway] users-db error:', err.message));
 
 class UserRepository {
   async findAll() {

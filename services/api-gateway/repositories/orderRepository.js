@@ -5,8 +5,11 @@ const pool = new Pool({
   host:     process.env.ORDERS_DB_HOST     || 'localhost',
   database: process.env.ORDERS_DB_NAME     || 'orders_db',
   password: process.env.ORDERS_DB_PASSWORD || 'novalink_pass',
-  port:     process.env.ORDERS_DB_PORT     || 5432
+  port:     process.env.ORDERS_DB_PORT     || 5432,
+  connectionTimeoutMillis: 3000,
+  idleTimeoutMillis: 10000,
 });
+pool.on('error', (err) => console.error('[gateway] orders-db error:', err.message));
 
 class OrderRepository {
   async findById(id) {

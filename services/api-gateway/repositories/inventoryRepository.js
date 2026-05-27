@@ -5,8 +5,11 @@ const pool = new Pool({
   host:     process.env.PRODUCTS_DB_HOST     || 'localhost',
   database: process.env.PRODUCTS_DB_NAME     || 'products_db',
   password: process.env.PRODUCTS_DB_PASSWORD || 'novalink_pass',
-  port:     process.env.PRODUCTS_DB_PORT     || 5432
+  port:     process.env.PRODUCTS_DB_PORT     || 5432,
+  connectionTimeoutMillis: 3000,
+  idleTimeoutMillis: 10000,
 });
+pool.on('error', (err) => console.error('[gateway] products-db error:', err.message));
 
 class InventoryRepository {
   async findAll() {
