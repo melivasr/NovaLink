@@ -20,4 +20,11 @@ const verifyToken = (req, res, next) => {
   }
 };
 
-module.exports = verifyToken;
+const requireAdmin = (req, res, next) => {
+  if (!req.user || !req.user.is_admin) {
+    return res.status(403).json({ success: false, message: 'Acceso denegado. Se requieren permisos de administrador.' });
+  }
+  next();
+};
+
+module.exports = { verifyToken, requireAdmin };

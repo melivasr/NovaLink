@@ -3,11 +3,11 @@ const router = express.Router();
 const bcryptjs = require('bcryptjs');
 const { publish } = require('../events/broker');
 const UserRepository = require('../repositories/userRepository');
-
+const { verifyToken, requireAdmin } = require('../middleware/verifyToken');
 const repo = new UserRepository();
 
-// GET — directo al repo
-router.get('/', async (req, res) => {
+// GET all — solo admin
+router.get('/', verifyToken, requireAdmin, async (req, res) => {
   try {
     const data = await repo.findAll();
     res.json({ success: true, data });
@@ -16,7 +16,8 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.get('/:id', async (req, res) => {
+// GET by id — autenticado
+router.get('/:id', verifyToken, async (req, res) => {
   try {
     const data = await repo.findById(req.params.id);
     if (!data) return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
@@ -26,7 +27,8 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.get('/:id/skills', async (req, res) => {
+// GET skills — autenticado
+router.get('/:id/skills', verifyToken, async (req, res) => {
   try {
     const user = await repo.findById(req.params.id);
     if (!user) return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
@@ -37,7 +39,7 @@ router.get('/:id/skills', async (req, res) => {
   }
 });
 
-// POST — publica al broker
+// POST — público (registro)
 router.post('/', async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -52,8 +54,8 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PUT — publica al broker
-router.put('/:id', async (req, res) => {
+// PUT — autenticado
+router.put('/:id', verifyToken, async (req, res) => {
   try {
     const { name, email, password } = req.body;
     const passwordHash = password ? await bcryptjs.hash(password, 10) : undefined;
@@ -64,8 +66,8 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// DELETE — publica al broker
-router.delete('/:id', async (req, res) => {
+// DELETE — solo admin
+router.delete('/:id', verifyToken, requireAdmin, async (req, res) => {
   try {
     await publish('usuario.eliminado', { userId: req.params.id, timestamp: new Date().toISOString() });
     res.status(202).json({ message: 'Eliminación en proceso' });
