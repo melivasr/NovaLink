@@ -1,5 +1,11 @@
 # NovaLink - Sistema de Habilidades Sociales 
 
+## Finalidad del Proyecto
+NovaLink es una plataforma diseñada para la compra, gestión y seguimiento de un catálogo virtual de "habilidades sociales". Su propósito principal es brindar un ecosistema altamente escalable que sirva como caso práctico integral para la implementación de arquitecturas distribuidas modernas. El sistema permite a los usuarios registrarse, explorar inventarios de habilidades, realizar pedidos de forma segura mediante JWT y recibir notificaciones asíncronas, demostrando el uso efectivo de microservicios, eventos (EDA) y orquestación con Kubernetes.
+
+## Estado del Proyecto
+**En fase de integración activa:** Toda la arquitectura backend (compuesta por los 5 microservicios base, bases de datos independientes y message broker) ya se encuentra completamente funcional y optimizada para ser desplegada en un clúster local de Kubernetes. Actualmente, el estado del proyecto se enfoca en consolidar la integración de las interfaces visuales a través del FrontEnd (React/Vite).
+
 ## Arquitectura
 
 5 microservicios independientes desacoplados:
@@ -9,6 +15,38 @@
 - **Inventory Service** (puerto 3002): Catálogo de habilidades sociales
 - **Orders Service** (puerto 3003): Procesamiento de pedidos
 - **Notifications Service** (puerto 3004): Envío de notificaciones
+
+## Diagramas
+
+Puedes consultar los diagramas de arquitectura en la carpeta `models/`:
+- [Diagrama de Componentes](models/diagrama-componentes.puml)
+- [Diagrama de Despliegue](models/diagrama-despliegue.puml)
+- [Diagrama de Eventos (EDA)](models/diagrama-eda.puml)
+- [Secuencia de Compra](models/diagrama-secuencia-compra.puml)
+
+## Registros de Decisiones Arquitectónicas (ADRs)
+
+Para mantener un seguimiento de las decisiones de diseño del sistema, documentamos los Arquitecture Decision Records (ADRs).
+
+### ADR 001: Arquitectura basada en Microservicios
+- **Contexto**: NovaLink necesita ser un sistema escalable y mantenible por múltiples equipos o desarrolladores en paralelo.
+- **Decisión**: Se separó la lógica de negocio en 5 microservicios independientes (Auth, Users, Inventory, Orders, Notifications) más un API Gateway.
+- **Consecuencias**: Permite escalabilidad y despliegue independiente, pero aumenta la complejidad operativa y requiere estrategias para consistencia distribuida.
+
+### ADR 002: Patrón Base de Datos por Microservicio (Database per Service)
+- **Contexto**: Un microservicio debe ser autónomo y su estado no debe ser modificado por otros servicios directamente.
+- **Decisión**: Se provee una base de datos PostgreSQL separada para cada dominio de negocio (usuarios, productos, órdenes).
+- **Consecuencias**: Se garantiza un fuerte aislamiento. Como un servicio no puede hacer "JOINs" con las tablas de otro, la agregación de datos se maneja a nivel de aplicación (API Gateway) o replicación por eventos.
+
+### ADR 003: Comunicación Asíncrona basada en Eventos (EDA)
+- **Contexto**: Los flujos de negocio que involucran varios servicios (ej. crear una orden de compra, reducir inventario, enviar notificación) no deben fallar en bloque si un solo servicio temporalmente no responde.
+- **Decisión**: Implementar un bus de mensajes (RabbitMQ) y el patrón coreografía/eventos (`diagrama-eda.puml`) para comunicación entre microservicios.
+- **Consecuencias**: Favorece fuertemente el desacoplamiento y resiliencia del sistema. Requiere lidiar con consistencia eventual y manejo de errores asíncronos.
+
+### ADR 004: Adopción centralizada de un API Gateway
+- **Contexto**: Los clientes FrontEnd necesitan consumir diferentes microservicios, lo cual requeriría conocer múltiples puertos, hostnames y complicaría el control de acceso (CORS/Auth).
+- **Decisión**: Implementar un API Gateway como único punto de entrada para todas las aplicaciones cliente.
+- **Consecuencias**: Facilita enormemente el consumo para el frontend. El API Gateway se convierte en una pieza crítica de la arquitectura que puede sufrir desgaste de agregación si alberga demasiada lógica de negocio.
 
 
 ## Instalación y Ejecución
@@ -148,6 +186,8 @@ Los comandos anteriores ya buscan el pod actual automáticamente por label.
 - 200: OK
 - 202: Accepted
 - 201: Created
+
+
 - 204: No Content
 - 400: Bad Request
 - 401: Unauthorized (Token inválido o faltante)

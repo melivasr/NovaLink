@@ -1,0 +1,79 @@
+@startuml
+!theme plain
+skinparam componentStyle uml2
+skinparam nodesep 50
+skinparam ranksep 60
+
+title Diagrama de Despliegue - NovaLink Completo
+
+node "Cliente/Dev" as client
+
+node "Minikube VM (localhost)" {
+    
+    artifact "<<ConfigMap + Secret>>\nnovalink-config" as config
+    
+    node "<<container>> Docker" as docker_gateway {
+        component "API-Gateway\nNode.js Express :3000" as gateway
+    }
+
+    node "<<container>> Docker " as docker_auth {
+        component "Auth-service\nNode.js Express :3005" as auth
+    }
+
+    node "<<container>> Docker  " as docker_users {
+        component "Users-service\nNode.js Express :3001" as users
+    }
+
+    node "<<container>> Docker   " as docker_orders {
+        component "Orders-service\nNode.js Express :3003" as orders
+    }
+
+    node "<<container>> Docker    " as docker_products {
+        component "Products-service\nNode.js Express :3002" as products
+    }
+    
+    node "<<container>> Docker     " as docker_notifications {
+        component "Notifications-service\nNode.js Express :3004" as notifications
+    }
+
+    node "<<container>> Docker      " as docker_broker {
+        queue "RabbitMQ\nMessage Broker :5672" as rmq
+    }
+
+    node "<<container>> Docker       " as docker_users_db {
+        database "users-db\nPostgreSQL\nClusterIP:5432" as users_db
+    }
+
+    node "<<container>> Docker        " as docker_orders_db {
+        database "orders-db\nPostgreSQL\nClusterIP:5432" as orders_db
+    }
+
+    node "<<container>> Docker         " as docker_products_db {
+        database "products-db\nPostgreSQL\nClusterIP:5432" as products_db
+    }
+}
+
+' Enlaces externos
+client .down.> gateway : :30000 (NodePort)
+client .down.> config : utiliza
+
+' Enrutamiento API Gateway
+gateway -down-> auth : /auth
+gateway -down-> users : /users
+gateway -down-> products : /products
+gateway -down-> orders : /orders
+gateway -down-> notifications : /notifications
+
+' Comunicación Asíncrona (Eventos)
+auth -down-> rmq : Publica evento
+users -down-> rmq : Produce/Consume
+products -down-> rmq : Produce/Consume
+orders -down-> rmq : Produce/Consume
+notifications -up-> rmq : Consume eventos
+
+' Conexiones a Base de Datos
+users -down-> users_db : TCP:5432
+orders -down-> orders_db : TCP:5432
+products -down-> products_db : TCP:5432
+
+@enduml

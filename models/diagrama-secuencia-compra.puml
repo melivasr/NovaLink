@@ -1,0 +1,69 @@
+@startuml
+!theme plain
+
+' Espaciados solicitados
+skinparam nodesep 500
+skinparam ranksep 300
+skinparam ParticipantPadding 100
+
+title Diagrama de Secuencia - Creación de Pedido y Asignación de Habilidad
+
+actor "Cliente" as client
+participant "FrontEnd\n(React/Vite)" as frontend
+
+box "Minikube VM (Cluster K8s)" #F9F9F9
+    participant "API-Gateway" as gateway
+    queue "RabbitMQ\n(Message Broker)" as broker
+    participant "Orders-service" as orders
+    participant "Products-service" as products
+    participant "Users-service" as users
+    participant "Notifications-service" as notif
+end box
+
+== 1. Recepción y Enrutamiento (Punto de API) ==
+client -> frontend : Click en "Comprar" (Checkout de habilidades)
+frontend -> gateway : POST /api/orders\n{ items: [{skillId, quantity}] }
+
+gateway -> broker : Publish evento: "orden.creada"\n(orderId, userId, items)
+gateway -->> frontend : HTTP 202 Accepted\n(Respuesta rápida)
+frontend -->> client : Muestra estado: "Pedido en proceso"
+
+== 2. Coreografía de Microservicios (EDA) ==
+
+broker -> orders : Consume evento: "orden.creada"
+orders -> orders : Guarda orden en orders-db\n(Status: Procesando)
+orders -> broker : Publish evento: "pedido.creado"\n(orderId, userId, items)
+
+broker -> products : Consume evento: "pedido.creado"
+products -> products : Chequea inventario de habilidades\nen products-db
+
+alt Si hay Stock Suficiente
+    products -> products : Reduce disponibilidad
+    products -> broker : Publish evento: "inventario.confirmado"\n(orderId, userId)
+    
+    == 3. Evento de Éxito y Asignación ==
+    par Los 3 servicios en paralelo
+        broker -> orders : Consume "inventario.confirmado"
+        orders -> orders : Actualiza orden en DB\n(Status: Completada)
+    else
+        broker -> users : Consume "inventario.confirmado"
+        users -> users : Asigna habilidad al inventario\ndel usuario en users-db
+    else
+        broker -> notif : Consume "inventario.confirmado"
+        notif -> notif : Registra notificación de\néxito en notifications-db
+    end
+
+else Si no hay Stock o no se encuentra la Habilidad
+    products -> broker : Publish evento: "inventario.fallido"\n(orderId, reason)
+    
+    == 3. Evento de Fallo ==
+    par Servicios que controlan fallos
+        broker -> orders : Consume "inventario.fallido"
+        orders -> orders : Actualiza orden en DB\n(Status: Cancelada)
+    else
+        broker -> notif : Consume "inventario.fallido"
+        notif -> notif : Registra notificación de\nerror/cancelación
+    end
+end
+
+@enduml

@@ -1,0 +1,81 @@
+@startuml
+!theme plain
+skinparam rectangle {
+    BackgroundColor White
+    BorderColor Black
+}
+
+title "Diagrama EDA - Mapa de Publicadores y Suscriptores - NovaLink"
+
+cloud "RabbitMQ Exchange (amq.topic/direct)" as broker #LightBlue
+
+rectangle "API Gateway (Publisher)" as gateway #LightGreen {
+    usecase "Publica eventos del usuario" as g_usr
+    usecase "Publica eventos de producto" as g_prod
+    usecase "Publica eventos de orden" as g_ord
+    usecase "Publica eventos de notif" as g_notif
+}
+
+rectangle "Orders Service" as orders #Orange {
+    usecase "Publica 'pedido.creado'" as o_pub
+    usecase "Subscribe 'orden.creada'" as o_sub_1
+    usecase "Subscribe 'inventario.confirmado'" as o_sub_2
+    usecase "Subscribe 'inventario.fallido'" as o_sub_3
+}
+
+rectangle "Products Service / Inventory" as products #Pink {
+    usecase "Publica 'inventario.confirmado'" as p_pub_1
+    usecase "Publica 'inventario.fallido'" as p_pub_2
+    usecase "Subscribe 'pedido.creado'" as p_sub_1
+    usecase "Subscribe 'producto.actualizado'" as p_sub_2
+}
+
+rectangle "Users Service" as users #Yellow {
+    usecase "Subscribe 'usuario.registrado'" as u_sub_1
+    usecase "Subscribe 'usuario.actualizado'" as u_sub_2
+    usecase "Subscribe 'inventario.confirmado'" as u_sub_3
+}
+
+rectangle "Notifications Service" as notifications #LightGray {
+    usecase "Subscribe 'inventario.confirmado'" as n_sub_1
+    usecase "Subscribe 'inventario.fallido'" as n_sub_2
+    usecase "Subscribe 'notificacion.creada'" as n_sub_3
+    usecase "Subscribe 'notificacion.leida'" as n_sub_4
+    usecase "Subscribe 'notificacion.eliminada'" as n_sub_5
+}
+
+' ========================================================
+' ENLACES DE PUBLICACION (Productores -> Broker)
+' ========================================================
+
+g_usr ..> broker : "usuario.registrado"\n"usuario.actualizado"\n"usuario.eliminado"
+g_prod ..> broker : "producto.actualizado"
+g_ord ..> broker : "orden.creada"\n"orden.cancelada"
+g_notif ..> broker : "notificacion.creada"\n"notificacion.leida"\n"notificacion.eliminada"
+
+o_pub ..> broker : "pedido.creado"
+p_pub_1 ..> broker : "inventario.confirmado"
+p_pub_2 ..> broker : "inventario.fallido"
+
+' ========================================================
+' ENLACES DE SUSCRIPCION (Broker -> Consumidores)
+' ========================================================
+
+broker --> o_sub_1 : "orden.creada"
+broker --> o_sub_2 : "inventario.confirmado"
+broker --> o_sub_3 : "inventario.fallido"
+
+broker --> p_sub_1 : "pedido.creado"
+broker --> p_sub_2 : "producto.actualizado"
+
+broker --> u_sub_1 : "usuario.registrado"
+broker --> u_sub_2 : "usuario.actualizado"
+broker --> u_sub_3 : "inventario.confirmado"
+
+broker --> n_sub_1 : "inventario.confirmado"
+broker --> n_sub_2 : "inventario.fallido"
+broker --> n_sub_3 : "notificacion.creada"
+broker --> n_sub_4 : "notificacion.leida"
+broker --> n_sub_5 : "notificacion.eliminada"
+
+@enduml
