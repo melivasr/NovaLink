@@ -67,7 +67,7 @@ function OrdersPage() {
               <div style={styles.qtyControl}>
                 <button style={styles.qtyBtn} onClick={() => updateQuantity(item.id, item.quantity - 1)}>−</button>
                 <span style={styles.qtyValue}>{item.quantity}</span>
-                <button style={styles.qtyBtn} onClick={() => updateQuantity(item.id, item.quantity + 1)}>+</button>
+                <button style={styles.qtyBtn} onClick={() => updateQuantity(item.id, item.quantity + 1)}disabled={item.quantity >= item.stock}>+</button>
               </div>
               <button style={styles.removeBtn} onClick={() => removeFromCart(item.id)}>Quitar</button>
             </div>

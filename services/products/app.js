@@ -19,7 +19,7 @@ app.get('/', (req, res) => {
 
 app.listen(port, async () => {
   console.log(`Servicio de Inventario corriendo en puerto ${port}`);
-  const { startSubscribers } = require('./events/inventorySubscriber');
+  const { startSubscribers } = require('./services/inventorySubscriber');
   try {
     await startSubscribers();
   } catch (err) {

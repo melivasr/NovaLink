@@ -1,4 +1,4 @@
-const { subscribe, publish, connectWithRetry } = require('./broker');
+const { subscribe, publish, connectWithRetry } = require('../events/broker');
 const InventoryRepository = require('../repositories/inventoryRepository');
 
 const repo = new InventoryRepository();

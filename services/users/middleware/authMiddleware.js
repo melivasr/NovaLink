@@ -1,18 +1,14 @@
 const jwt = require('jsonwebtoken');
+const JWT_SECRET = process.env.JWT_SECRET_KEY || 'novalink-secret';
 
-const SECRET_KEY = process.env.JWT_SECRET_KEY || 'novalink-secret';
-
-const verifyToken = (req, res, next) => {
+const verifyTokenMiddleware = (req, res, next) => {
   const authHeader = req.headers.authorization;
-
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ success: false, message: 'Token no proporcionado' });
   }
-
   const token = authHeader.split(' ')[1];
-
   try {
-    const decoded = jwt.verify(token, SECRET_KEY);
+    const decoded = jwt.verify(token, JWT_SECRET);
     req.user = decoded;
     next();
   } catch (error) {
@@ -20,11 +16,4 @@ const verifyToken = (req, res, next) => {
   }
 };
 
-const requireAdmin = (req, res, next) => {
-  if (!req.user || !req.user.is_admin) {
-    return res.status(403).json({ success: false, message: 'Acceso denegado. Se requieren permisos de administrador.' });
-  }
-  next();
-};
-
-module.exports = { verifyToken, requireAdmin };
+module.exports = { verifyTokenMiddleware };
