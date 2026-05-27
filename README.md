@@ -130,61 +130,57 @@ SELECT * FROM notifications;
 
 Los comandos anteriores ya buscan el pod actual automáticamente por label.
 
-## Endpoints
+## Endpoints (API Gateway)
 
-### Users Service (3001)
+Todas las peticiones (incluyendo las del FrontEnd) se realizan a través del **API Gateway** en el puerto `3000`. Internamente este se comunica con los microservicios correspondientes de forma unificada.
 
-| Metodo | Endpoint | Descripcion |
-|---|---|---|
-| GET | /api/v1/users | Listar usuarios |
-| POST | /api/v1/users | Crear usuario |
-| GET | /api/v1/users/{id} | Obtener usuario |
-| PUT | /api/v1/users/{id} | Actualizar usuario |
-| DELETE | /api/v1/users/{id} | Eliminar usuario |
-| GET | /api/v1/users/{id}/skills | Listar habilidades |
-| PUT | /api/v1/users/{id}/skills | Agregar habilidad |
-| DELETE | /api/v1/users/{id}/skills | Quitar habilidad |
-
-### Inventory Service (3002)
-
-| Metodo | Endpoint | Descripcion |
-|---|---|---|
-| POST | /api/v1/inventory | Crear habilidad |
-| GET | /api/v1/inventory | Obtener habilidades |
-| GET | /api/v1/inventory/{id} | Obtener habilidad |
-| PUT | /api/v1/inventory/{id} | Actualizar habilidad o stock |
-| DELETE | /api/v1/inventory/{id} | Eliminar habilidad |
-
-### Orders Service (3003)
-
-| Metodo | Endpoint | Descripcion |
-|---|---|---|
-| POST | /api/v1/orders | Crear pedido |
-| GET | /api/v1/orders/{id} | Obtener pedido |
-| PUT | /api/v1/orders/{id} | Checkout (confirmar) |
-| DELETE | /api/v1/orders/{id} | Cancelar pedido |
-| GET | /api/v1/orders/user/{id} | Historial de usuario |
-
-### Notifications Service (3004)
-
-| Metodo | Endpoint | Descripcion |
-|---|---|---|
-| POST | /api/v1/noti | Crear notificacion |
-| GET | /api/v1/noti/user/{id} | Notificaciones de usuario |
-| PUT | /api/v1/noti/{id}/read | Marcar como leida |
-| DELETE | /api/v1/noti/{id} | Eliminar notificacion |
-
-### Auth Service (3005)
+### Auth (`/api/v1/auth`)
 
 | Metodo | Endpoint | Descripcion |
 |---|---|---|
 | POST | /api/v1/auth/login | Obtener JWT token |
 | POST | /api/v1/auth/verify | Verificar token (requiere Bearer) |
 
+### Users (`/api/users`)
+
+| Metodo | Endpoint | Descripcion |
+|---|---|---|
+| GET | /api/users | Listar usuarios |
+| POST | /api/users | Crear usuario |
+| GET | /api/users/{id} | Obtener usuario |
+| PUT | /api/users/{id} | Actualizar usuario |
+| DELETE | /api/users/{id} | Eliminar usuario |
+| GET | /api/users/{id}/skills | Listar habilidades de usuario |
+
+### Products / Inventory (`/api/products`)
+
+| Metodo | Endpoint | Descripcion |
+|---|---|---|
+| GET | /api/products | Obtener catálogo de productos (habilidades) |
+| GET | /api/products/{id} | Obtener producto individual |
+
+### Orders (`/api/orders`)
+
+| Metodo | Endpoint | Descripcion |
+|---|---|---|
+| POST | /api/orders | Crear pedido (requiere JWT) |
+| GET | /api/orders/{id} | Obtener pedido por ID |
+| DELETE | /api/orders/{id} | Cancelar pedido |
+| GET | /api/orders/user/{id} | Historial de órdenes de un usuario |
+
+### Notifications (`/api/notifications`)
+
+| Metodo | Endpoint | Descripcion |
+|---|---|---|
+| POST | /api/notifications | Crear notificación |
+| GET | /api/notifications/user/{id} | Notificaciones de un usuario |
+| PUT | /api/notifications/{id}/read | Marcar notificación como leída |
+| DELETE | /api/notifications/{id} | Eliminar notificación |
+
 ## Códigos de Respuesta
 
 - 200: OK
-- 202: Accepted
+- 202: Accepted (Operación asíncrona enviada al broker)
 - 201: Created
 
 
@@ -202,7 +198,7 @@ NovaLink utiliza JSON Web Tokens (JWT) para proteger endpoints sensibles como la
 
 1. **Login** para obtener token:
 ```json
-POST http://127.0.0.1:3005/api/v1/auth/login
+POST http://localhost:3000/api/v1/auth/login
 {
   "email": "juan@example.com",
   "password": "secreto123"
@@ -224,9 +220,9 @@ Respuesta exitosa:
 }
 ```
 
-2. **Usar token** en requests protegidos (ejemplo: crear pedido):
+2. **Usar token** en requests protegidos (ejemplo: crear pedido via API Gateway):
 ```json
-POST http://127.0.0.1:3003/api/v1/orders
+POST http://localhost:3000/api/orders
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 {
   "items": [
@@ -240,7 +236,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 3. **Verificar token** (endpoint de diagnóstico):
 ```json
-POST http://127.0.0.1:3005/api/v1/auth/verify
+POST http://localhost:3000/api/v1/auth/verify
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
@@ -253,9 +249,9 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 ## Ejemplo de Uso Postman
 
-### 1. Crear usuario
+### 1. Crear usuario (Al API Gateway)
 ```json
-POST http://127.0.0.1:3001/api/v1/users
+POST http://localhost:3000/api/users
 {
 	"name": "Juan Pérez",
 	"email": "juan@example.com",
