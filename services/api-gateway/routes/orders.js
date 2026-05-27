@@ -3,7 +3,7 @@ const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const { publish } = require('../events/broker');
 const OrderRepository = require('../repositories/orderRepository');
-const verifyToken = require('../middleware/verifyToken');
+const { verifyToken } = require("../middleware/verifyToken");
 
 const repo = new OrderRepository();
 

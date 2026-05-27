@@ -26,12 +26,15 @@ function MyOrdersPage() {
       setLoading(false)
       return
     }
-    Promise.all([getOrdersByUser(userId), getSkills()])
-      .then(([ordersRes, allProducts]) => {
+    getOrdersByUser(userId)
+      .then((ordersRes) => {
+        setOrders(ordersRes.data || [])
+        return getSkills().catch(() => [])
+      })
+      .then((allProducts) => {
         const map = {}
         allProducts.forEach((p) => { map[p.id] = p.name })
         setProductMap(map)
-        setOrders(ordersRes.data || [])
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false))

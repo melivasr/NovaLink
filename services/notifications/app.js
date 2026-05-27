@@ -19,7 +19,7 @@ app.get('/', (req, res) => {
 
 app.listen(port, async () => {
   console.log(`Servicio de Notificaciones corriendo en puerto ${port}`);
-  const { startSubscribers } = require('./events/notificationSubscriber');
+  const { startSubscribers } = require('./services/notificationSubscriber');
   try {
     await startSubscribers();
   } catch (err) {

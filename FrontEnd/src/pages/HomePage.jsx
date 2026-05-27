@@ -45,6 +45,7 @@ function HomePage() {
   if (loading) return <p style={styles.center}>Cargando...</p>
   if (error)   return <p style={{ ...styles.center, color: '#ff6b6b' }}>{error}</p>
 
+  
   return (
     <div style={styles.page}>
       <div style={styles.header}>

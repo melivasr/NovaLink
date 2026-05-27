@@ -13,6 +13,7 @@ data:
   DB_PORT: "5432"
   DB_USER: "novalink_user"
   JWT_SECRET_KEY: bm92YWxpbmstc2VjcmV0
+  JWT_EXPIRATION: "15m"
 
   # Puertos de cada servicio
   USERS_PORT: "3001"

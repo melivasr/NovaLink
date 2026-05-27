@@ -5,8 +5,11 @@ const pool = new Pool({
   host:     process.env.NOTIF_DB_HOST     || 'localhost',
   database: process.env.NOTIF_DB_NAME     || 'notifications_db',
   password: process.env.NOTIF_DB_PASSWORD || 'novalink_pass',
-  port:     process.env.NOTIF_DB_PORT     || 5432
+  port:     process.env.NOTIF_DB_PORT     || 5432,
+  connectionTimeoutMillis: 3000,
+  idleTimeoutMillis: 10000,
 });
+pool.on('error', (err) => console.error('[gateway] notifications-db error:', err.message));
 
 class NotificationRepository {
   async findByUser(userId) {
