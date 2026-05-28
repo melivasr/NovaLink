@@ -24,9 +24,19 @@ end box
 client -> frontend : Click en "Comprar" (Checkout de habilidades)
 frontend -> gateway : POST /api/orders\n{ items: [{skillId, quantity}] }
 
-gateway -> broker : Publish evento: "orden.creada"\n(orderId, userId, items)
-gateway -->> frontend : HTTP 202 Accepted\n(Respuesta rápida)
-frontend -->> client : Muestra estado: "Pedido en proceso"
+alt Si la petición requiere validación o redirección
+    gateway -->> frontend : HTTP 303 See Other / 302 Found\n(Redirigir a status o Login)
+    frontend -->> client : Redirección en interfaz
+else Error interno (Ej. Broker caído)
+    gateway -->> frontend : HTTP 500 Internal Server Error\n(Fallo de infraestructura)
+    frontend -->> client : Muestra alerta: "Servicio no disponible"
+else Éxito (Petición asíncrona aceptada)
+    gateway -> broker : Publish evento: "orden.creada"\n(orderId, userId, items)
+    gateway -->> frontend : HTTP 202 Accepted\n(Respuesta rápida)
+    frontend -->> client : Muestra estado: "Pedido en proceso"
+end
+
+
 
 == 2. Coreografía de Microservicios (EDA) ==
 

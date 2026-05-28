@@ -23,7 +23,7 @@ rectangle "Orders Service" as orders #Orange {
     usecase "Subscribe 'inventario.fallido'" as o_sub_3
 }
 
-rectangle "Products Service / Inventory" as products #Pink {
+rectangle "Products Service" as products #Pink {
     usecase "Publica 'inventario.confirmado'" as p_pub_1
     usecase "Publica 'inventario.fallido'" as p_pub_2
     usecase "Subscribe 'pedido.creado'" as p_sub_1

@@ -18,11 +18,11 @@ NovaLink es una plataforma diseñada para la compra, gestión y seguimiento de u
 
 ## Diagramas
 
-Puedes consultar los diagramas de arquitectura en la carpeta `models/`:
-- [Diagrama de Componentes](models/diagrama-componentes.puml)
-- [Diagrama de Despliegue](models/diagrama-despliegue.puml)
-- [Diagrama de Eventos (EDA)](models/diagrama-eda.puml)
-- [Secuencia de Compra](models/diagrama-secuencia-compra.puml)
+Puedes consultar los diagramas de arquitectura:
+- diagrama-componentes.puml
+- diagrama-despliegue.puml
+- diagrama-eda.puml
+- diagrama-secuencia-compra.puml
 
 ## Registros de Decisiones Arquitectónicas (ADRs)
 
