@@ -1,4 +1,5 @@
 const InventoryService = require('../services/inventoryService');
+const { skillsCreatedTotal, skillsQueriedTotal } = require('../metrics');
 
 const service = new InventoryService();
 
@@ -14,6 +15,7 @@ const handleError = (res, error) => {
 const getAllSkills = async (req, res) => {
   try {
     const data = await service.getAllSkills();
+    skillsQueriedTotal.inc();
     res.status(200).json(data);
   } catch (error) {
     handleError(res, error);
@@ -23,6 +25,7 @@ const getAllSkills = async (req, res) => {
 const getSkillById = async (req, res) => {
   try {
     const data = await service.getSkillById(req.params.id);
+    skillsQueriedTotal.inc();
     res.status(200).json(data);
   } catch (error) {
     handleError(res, error);
@@ -32,6 +35,7 @@ const getSkillById = async (req, res) => {
 const createSkill = async (req, res) => {
   try {
     const data = await service.createSkill(req.body);
+    skillsCreatedTotal.inc();
     res.status(201).json(data);
   } catch (error) {
     handleError(res, error);

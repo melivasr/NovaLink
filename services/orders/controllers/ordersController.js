@@ -1,4 +1,5 @@
 const orderService = require('../services/orderService');
+const { ordersCreatedTotal, ordersCancelledTotal } = require('../metrics');
 
 const handleError = (res, error) => {
   const status = error.status || 500;
@@ -15,6 +16,7 @@ const getOrderById = async (req, res) => {
 const checkout = async (req, res) => {
   try {
     const data = await orderService.checkout(req.user.user_id, req.body.items, req.user);
+    ordersCreatedTotal.inc();
     res.status(202).json({ success: true, data, message: data.message });
   } catch (error) { handleError(res, error); }
 };
@@ -22,6 +24,7 @@ const checkout = async (req, res) => {
 const cancelOrder = async (req, res) => {
   try {
     await orderService.cancelOrder(req.params.id);
+    ordersCancelledTotal.inc();
     res.status(204).send();
   } catch (error) { handleError(res, error); }
 };

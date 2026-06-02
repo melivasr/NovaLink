@@ -3,15 +3,18 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $repoRoot
 
-Write-Host 'Apuntando Docker a Minikube...'
-minikube docker-env | Invoke-Expression
+$minikubeStatus = minikube status --format='{{.Host}}' 2>$null
+if ($minikubeStatus -ne 'Running') {
+    Write-Error "Minikube no está corriendo. Ejecuta: minikube start --cpus 4 --memory 7000"
+    exit 1
+}
 
 $services = @('users', 'products', 'orders', 'notifications')
 $imageNames = @{
-    'users'         = 'novalink/users-service:latest'
-    'products'      = 'novalink/products-service:latest'
-    'orders'        = 'novalink/orders-service:latest'
-    'notifications' = 'novalink/notifications-service:latest'
+    'users'         = 'novalink/users-service:local'
+    'products'      = 'novalink/products-service:local'
+    'orders'        = 'novalink/orders-service:local'
+    'notifications' = 'novalink/notifications-service:local'
 }
 $deployments = @{
     'users'         = 'users-service'
@@ -21,8 +24,8 @@ $deployments = @{
 }
 
 foreach ($svc in $services) {
-    Write-Host "Rebuilding $svc..."
-    docker build -t $imageNames[$svc] "./services/$svc"
+    Write-Host "Rebuilding $svc directly into Minikube..."
+    minikube image build -t $imageNames[$svc] "./services/$svc"
 }
 
 foreach ($svc in $services) {

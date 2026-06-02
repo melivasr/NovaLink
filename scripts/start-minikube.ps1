@@ -64,12 +64,10 @@ $services = @(
     @{ Name = 'api-gateway'; Container = 'api-gateway'; Path = 'services/api-gateway'; Tag = "novalink/api-gateway:$imageTag" }
 )
 
-Write-Host 'Building service images...'
+Write-Host 'Building service images directly into Minikube...'
 foreach ($service in $services) {
-    docker build -t $service.Tag (Join-Path $repoRoot $service.Path)
-    Assert-LastExit "docker build ($($service.Name))"
-    minikube -p minikube image load $service.Tag
-    Assert-LastExit "minikube image load ($($service.Name))"
+    minikube image build -t $service.Tag (Join-Path $repoRoot $service.Path)
+    Assert-LastExit "minikube image build ($($service.Name))"
 }
 
 Write-Host 'Applying Kubernetes manifests...'
