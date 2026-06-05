@@ -90,6 +90,10 @@ spec:
       labels:
         app: novalink
         component: orders-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3003"
+        prometheus.io/path: "/metrics"
     spec:
       containers:
         - name: orders
@@ -174,7 +178,8 @@ spec:
   selector:
     component: orders-service
   ports:
-    - port: 3003
+    - name: http
+      port: 3003
       targetPort: 3003
       nodePort: 30003
   type: NodePort

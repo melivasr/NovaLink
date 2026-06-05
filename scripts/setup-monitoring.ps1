@@ -18,6 +18,7 @@ Write-Host "`n[3/5] Instalando kube-prometheus-stack (esto puede tardar 2-3 minu
 helm upgrade --install prometheus prometheus-community/kube-prometheus-stack `
   --namespace monitoring `
   -f k8s/monitoring/prometheus-values.yaml `
+  --set grafana.adminPassword=novalink-admin `
   --wait --timeout 5m
 
 # Aplicar ServiceMonitors y dashboard de Grafana

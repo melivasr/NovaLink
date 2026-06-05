@@ -89,6 +89,10 @@ spec:
       labels:
         app: novalink
         component: products-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3002"
+        prometheus.io/path: "/metrics"
     spec:
       containers:
         - name: products
@@ -156,7 +160,8 @@ spec:
   selector:
     component: products-service
   ports:
-    - port: 3002
+    - name: http
+      port: 3002
       targetPort: 3002
       nodePort: 30002
   type: NodePort

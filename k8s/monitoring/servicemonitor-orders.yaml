@@ -1,0 +1,22 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: orders-service-monitor
+  namespace: monitoring
+  labels:
+    app: novalink
+    component: orders-service
+spec:
+  # Buscar el Service en el namespace default
+  namespaceSelector:
+    matchNames:
+      - default
+  # Seleccionar el Service con label component=orders-service
+  selector:
+    matchLabels:
+      component: orders-service
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+      scrapeTimeout: 10s
