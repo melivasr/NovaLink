@@ -49,6 +49,79 @@ Para mantener un seguimiento de las decisiones de diseño del sistema, documenta
 - **Consecuencias**: Facilita enormemente el consumo para el frontend. El API Gateway se convierte en una pieza crítica de la arquitectura que puede sufrir desgaste de agregación si alberga demasiada lógica de negocio.
 
 
+## Observabilidad y Monitoreo (Lab 3)
+
+### Prerrequisitos
+
+- Minikube instalado
+- Helm instalado (`winget install Helm.Helm`)
+- Docker Desktop corriendo
+
+### Paso 1 - Preparar el clúster
+
+```powershell
+minikube start --cpus 4 --memory 700
+minikube addons enable metrics-server
+```
+
+### Paso 2 - Desplegar los servicios de NovaLink
+
+```powershell
+.\scripts\start-minikube.ps1
+```
+
+Esto construye las imágenes Docker (con el endpoint `/metrics` incluido), aplica todos los manifiestos de `k8s/` y espera el rollout completo.
+
+### Paso 3 - Instalar el stack de monitoreo (Prometheus + Grafana)
+
+```powershell
+.\scripts\setup-monitoring.ps1
+```
+
+Esto instala `kube-prometheus-stack` via Helm, aplica los ServiceMonitors para `orders-service` y `products-service`, carga el dashboard de Grafana e inicia los port-forwards:
+
+| Herramienta | URL | Credenciales |
+|---|---|---|
+| Grafana | http://localhost:3010 | `admin` / `novalink-admin` |
+| Prometheus | http://localhost:9090 | - |
+
+### Paso 4 - Verificar instrumentación
+
+Los servicios `orders` y `products` exponen métricas en `/metrics` usando `prom-client`:
+
+```powershell
+# Verificar endpoint de métricas
+curl http://localhost:3003/metrics   # orders-service
+curl http://localhost:3002/metrics   # products-service
+```
+
+Confirmar que Prometheus descubrió los targets en: http://localhost:9090/targets -> buscar `orders-service` y `products-service` en estado **UP**.
+
+### Paso 5 - Dashboard de Grafana
+
+El dashboard **"NovaLink - Observabilidad de Microservicios"** se carga automáticamente e incluye:
+
+| Panel | Métrica |
+|---|---|
+| Réplicas activas | `kube_deployment_status_replicas_available` |
+| Estado UP / DOWN | Verde/rojo según réplicas disponibles |
+| CPU por Pod | `process_cpu_seconds_total` |
+| Memoria por Pod | `container_memory_usage_bytes` |
+| Requests por segundo | `http_requests_total` |
+| Latencia promedio (avg / p95) | `http_request_duration_seconds` |
+| Saturación de memoria | Uso vs disponible en el nodo |
+| Pedidos creados / cancelados | `orders_created_total`, `orders_cancelled_total` |
+| Consultas / creación de habilidades | `skills_queried_total`, `skills_created_total` |
+
+
+### Reconstruir imágenes tras cambios en el código
+
+```powershell
+.\scripts\rebuild-all.ps1
+```
+
+---
+
 ## Instalación y Ejecución
 
 ### Kubernetes local
