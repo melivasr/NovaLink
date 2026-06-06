@@ -81,11 +81,11 @@ data:
           "gridPos": { "x": 0, "y": 4, "w": 12, "h": 7 },
           "targets": [
             {
-              "expr": "rate(process_cpu_seconds_total{job=\"orders-service\"}[2m])",
+              "expr": "sum(rate(process_cpu_seconds_total{job=\"orders-service\"}[2m]))",
               "legendFormat": "orders-service"
             },
             {
-              "expr": "rate(process_cpu_seconds_total{job=\"products-service\"}[2m])",
+              "expr": "sum(rate(process_cpu_seconds_total{job=\"products-service\"}[2m]))",
               "legendFormat": "products-service"
             }
           ],
