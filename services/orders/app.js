@@ -9,6 +9,7 @@ app.use(express.json());
 
 // HTTP duration middleware - must be before routes
 app.use((req, res, next) => {
+  if (req.path === '/metrics' || req.path === '/health') return next();
   const start = Date.now();
   res.on('finish', () => {
     const route = (req.route ? req.route.path : req.path).replace(/\/\d+/g, '/:id');

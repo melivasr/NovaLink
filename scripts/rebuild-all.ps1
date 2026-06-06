@@ -11,15 +11,15 @@ if ($minikubeStatus -ne 'Running') {
 
 $services = @('users', 'products', 'orders', 'notifications')
 $imageNames = @{
-    'users'         = 'novalink/users-service:local'
-    'products'      = 'novalink/products-service:local'
-    'orders'        = 'novalink/orders-service:local'
+    'users' = 'novalink/users-service:local'
+    'products' = 'novalink/products-service:local'
+    'orders' = 'novalink/orders-service:local'
     'notifications' = 'novalink/notifications-service:local'
 }
 $deployments = @{
-    'users'         = 'users-service'
-    'products'      = 'products-service'
-    'orders'        = 'orders-service'
+    'users' = 'users-service'
+    'products' = 'products-service'
+    'orders' = 'orders-service'
     'notifications' = 'notifications-service'
 }
 
@@ -28,9 +28,16 @@ foreach ($svc in $services) {
     minikube image build -t $imageNames[$svc] "./services/$svc"
 }
 
+$containerNames = @{
+    'users'= 'users'
+    'products' = 'products'
+    'orders' = 'orders'
+    'notifications' = 'notifications'
+}
+
 foreach ($svc in $services) {
-    Write-Host "Reiniciando pod $($deployments[$svc])..."
-    kubectl rollout restart deployment $deployments[$svc]
+    Write-Host "Actualizando imagen de $($deployments[$svc])..."
+    kubectl set image "deployment/$($deployments[$svc])" "$($containerNames[$svc])=$($imageNames[$svc])"
 }
 
 Write-Host 'Esperando que los pods esten listos...'
